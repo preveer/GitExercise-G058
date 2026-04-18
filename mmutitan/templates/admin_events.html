@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container mt-4">
+    <h1>Event Admin Panel</h1>
+    <p>Manage campus sporting events here.</p>
+    <hr>
+    
+    <h3>Current Events</h3>
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Event Name</th>
+                <th>Venue</th>
+                <th>Sport</th>
+                <th>Date</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for event in events %}
+            <tr>
+                <td>{{ event.name }}</td>
+                <td>{{ event.venue }}</td>
+                <td>{{ event.sport_type }}</td>
+                <td>{{ event.date }}</td>
+            </tr>
+            {% else %}
+            <tr>
+                <td colspan="4">No events found. Add one!</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}
