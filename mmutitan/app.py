@@ -1,97 +1,125 @@
-from flask_sqlalchemy import SQLAlchemy
-from flask_login import UserMixin, LoginManager
-from datetime import datetime
+from flask import Flask, render_template, url_for, flash, redirect
+from flask_login import login_user, current_user, logout_user, login_required
+from models import db, login_manager, User, Badge, Event, RSVP
+from forms import RegistrationForm, LoginForm, EventForm
+from config import Config
 
-db = SQLAlchemy()
-login_manager = LoginManager()
+def create_app():
+    app = Flask(__name__)
+    app.config.from_object(Config)
 
-# This is a helper table for the badges
-user_badges = db.Table('user_badges',
-    db.Column('user_id', db.Integer, db.ForeignKey('user.id'), primary_key=True),
-    db.Column('badge_id', db.Integer, db.ForeignKey('badge.id'), primary_key=True)
-)
+    # Initialize extensions
+    db.init_app(app)
+    login_manager.init_app(app)
+    login_manager.login_view = 'login'
 
-class User(UserMixin, db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(100), nullable=False)
-    email = db.Column(db.String(120), unique=True, nullable=False)
-    password = db.Column(db.String(200), nullable=False)
-    faculty = db.Column(db.String(100))
-    year = db.Column(db.Integer)
-    sport_preferences = db.Column(db.String(200))
-    profile_photo = db.Column(db.String(200), default='default.jpg')
-    is_admin = db.Column(db.Boolean, default=False)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    
-    badges = db.relationship('Badge', secondary=user_badges, backref=db.backref('users', lazy='dynamic'))
+    with app.app_context():
+        db.create_all()
 
-class Badge(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    title = db.Column(db.String(100), nullable=False)
-    description = db.Column(db.String(250))
-    image_file = db.Column(db.String(100), nullable=False, default='default_badge.png')
+    @app.route('/')
+    def home():
+        return render_template('base.html')
 
-# --- PREVEER'S TASK POOL MANAGEMENT ---
-class Task(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    title = db.Column(db.String(100), nullable=False)
-    description = db.Column(db.Text, nullable=False)
-    category = db.Column(db.String(50), nullable=False)
-    difficulty = db.Column(db.String(20), nullable=False)
-    proof_required = db.Column(db.Boolean, default=False) 
-    points = db.Column(db.Integer, default=10)
-    date_created = db.Column(db.DateTime, default=datetime.utcnow)
+    @app.route('/register', methods=['GET', 'POST'])
+    def register():
+        if current_user.is_authenticated:
+            return redirect(url_for('home'))
+        form = RegistrationForm()
+        if form.validate_on_submit():
+            user = User(
+                name=form.name.data,
+                email=form.email.data,
+                password=form.password.data, # Note: Hashing is usually done here for real apps
+                faculty=form.faculty.data,
+                year=form.year.data,
+                sport_preferences=form.sport_preferences.data
+            )
+            db.session.add(user)
+            db.session.commit()
+            flash('Account created! You can now log in.', 'success')
+            return redirect(url_for('login')) 
+        return render_template('register.html', title='Register', form=form)
 
-# --- AAHTITIYA'S TABLES (WEEK 4) ---
-class Event(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(200), nullable=False)
-    venue = db.Column(db.String(200))
-    sport_type = db.Column(db.String(100))
-    date = db.Column(db.Date)      # Stores the day
-    time = db.Column(db.Time)      # Stores the clock time
-    max_capacity = db.Column(db.Integer)
+    @app.route('/login', methods=['GET', 'POST'])
+    def login():
+        if current_user.is_authenticated:
+            return redirect(url_for('home'))
+        form = LoginForm()
+        if form.validate_on_submit():
+            user = User.query.filter_by(email=form.email.data).first()
+            if user and user.password == form.password.data:
+                login_user(user, remember=form.remember.data)
+                flash('Welcome back to the Titan Arena!', 'success')
+                return redirect(url_for('home'))
+            else:
+                flash('Login Unsuccessful. Check email and password.', 'danger')
+        return render_template('login.html', title='Login', form=form)
 
-class RSVP(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
-    event_id = db.Column(db.Integer, db.ForeignKey('event.id'))
-    waitlisted = db.Column(db.Boolean, default=False)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    @app.route('/logout')
+    def logout():
+        logout_user()
+        flash('You have been logged out.', 'info')
+        return redirect(url_for('home'))
 
-class Challenge(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    title = db.Column(db.String(200), nullable=False)
-    description = db.Column(db.Text)
-    sport_category = db.Column(db.String(100))
-    deadline = db.Column(db.DateTime)
-    scoring_criteria = db.Column(db.String(200))
-    is_closed = db.Column(db.Boolean, default=False)
+    # --- AAHTITIYA'S FIXED ROUTE  ---
+    @app.route('/admin/events', methods=['GET', 'POST'])
+    def manage_events():
+        form = EventForm()
+        if form.validate_on_submit():
+            new_event = Event(
+                name=form.name.data,
+                venue=form.venue.data,
+                sport_type=form.sport_type.data,
+                date=form.date.data,
+                time=form.time.data,
+                max_capacity=form.max_capacity.data
+            )
+            db.session.add(new_event)
+            db.session.commit()
+            flash('Event successfully created!', 'success')
+            return redirect(url_for('manage_events'))
+        
+        events = Event.query.all()
+        return render_template('admin_events.html', events=events, form=form)
 
-class Submission(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
-    challenge_id = db.Column(db.Integer, db.ForeignKey('challenge.id'))
-    result = db.Column(db.String(100))
-    proof_file = db.Column(db.String(200))
-    verified = db.Column(db.Boolean, default=False)
-    submitted_at = db.Column(db.DateTime, default=datetime.utcnow)
+    # --- TASK 2: VIEW EVENTS & RSVP ---
+    @app.route('/events')
+    @login_required
+    def list_events():
+        events = Event.query.all()
+        return render_template('events.html', events=events)
 
-class BuddyRequest(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    sender_id = db.Column(db.Integer, db.ForeignKey('user.id'))
-    receiver_id = db.Column(db.Integer, db.ForeignKey('user.id'))
-    status = db.Column(db.String(50), default='Pending')
-    availability = db.Column(db.String(200))
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    @app.route('/rsvp/<int:event_id>', methods=['POST'])
+    @login_required
+    def rsvp(event_id):
+        event = Event.query.get_or_404(event_id)
+        
+        # 1. Check if the user already joined
+        existing_rsvp = RSVP.query.filter_by(user_id=current_user.id, event_id=event.id).first()
+        if existing_rsvp:
+            flash('You are already on the list for this event!', 'info')
+            return redirect(url_for('list_events'))
 
-class Feedback(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
-    submission_type = db.Column(db.String(100))
-    message = db.Column(db.Text, nullable=False)
-    submitted_at = db.Column(db.DateTime, default=datetime.utcnow)
+        # 2. Check how many people are currently going (excluding waitlist)
+        current_rsvps = RSVP.query.filter_by(event_id=event.id, waitlisted=False).count()
+        
+        # 3. The Waitlist Math
+        is_waitlisted = current_rsvps >= event.max_capacity
 
-@login_manager.user_loader
-def load_user(user_id):
-    return User.query.get(int(user_id))
+        # 4. Save to database
+        new_rsvp = RSVP(user_id=current_user.id, event_id=event.id, waitlisted=is_waitlisted)
+        db.session.add(new_rsvp)
+        db.session.commit()
+
+        if is_waitlisted:
+            flash(f'Event is full! You have been added to the WAITLIST for {event.name}.', 'warning')
+        else:
+            flash(f'Successfully RSVP\'d for {event.name}!', 'success')
+            
+        return redirect(url_for('list_events'))
+
+    return app
+
+if __name__ == '__main__':
+    app = create_app()
+    app.run(debug=True)

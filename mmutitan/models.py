@@ -24,24 +24,14 @@ class User(UserMixin, db.Model):
     
     badges = db.relationship('Badge', secondary=user_badges, backref=db.backref('users', lazy='dynamic'))
 
+
 class Badge(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     title = db.Column(db.String(100), nullable=False)
     description = db.Column(db.String(250))
     image_file = db.Column(db.String(100), nullable=False, default='default_badge.png')
 
-# --- CARD 12: TASK POOL MANAGEMENT ---
-class Task(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    title = db.Column(db.String(100), nullable=False)
-    description = db.Column(db.Text, nullable=False)
-    category = db.Column(db.String(50), nullable=False) # e.g., Gym, Cardio, Team
-    difficulty = db.Column(db.String(20), nullable=False) # Easy, Medium, Hard
-    proof_required = db.Column(db.Boolean, default=False) 
-    points = db.Column(db.Integer, default=10)
-    date_created = db.Column(db.DateTime, default=datetime.utcnow)
-
-# --- AAHTITIYA'S FEATURES ---
+# --- AAHTITIYA'S EVENT TABLE ---
 class Event(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(200), nullable=False)
@@ -50,47 +40,14 @@ class Event(db.Model):
     date = db.Column(db.Date)      
     time = db.Column(db.Time)      
     max_capacity = db.Column(db.Integer)
-
-class RSVP(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
-    event_id = db.Column(db.Integer, db.ForeignKey('event.id'))
-    waitlisted = db.Column(db.Boolean, default=False)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-
-class Challenge(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    title = db.Column(db.String(200), nullable=False)
-    description = db.Column(db.Text)
-    sport_category = db.Column(db.String(100))
-    deadline = db.Column(db.DateTime)
-    scoring_criteria = db.Column(db.String(200))
-    is_closed = db.Column(db.Boolean, default=False)
-
-class Submission(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
-    challenge_id = db.Column(db.Integer, db.ForeignKey('challenge.id'))
-    result = db.Column(db.String(100))
-    proof_file = db.Column(db.String(200))
-    verified = db.Column(db.Boolean, default=False)
-    submitted_at = db.Column(db.DateTime, default=datetime.utcnow)
-
-class BuddyRequest(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    sender_id = db.Column(db.Integer, db.ForeignKey('user.id'))
-    receiver_id = db.Column(db.Integer, db.ForeignKey('user.id'))
-    status = db.Column(db.String(50), default='Pending')
-    availability = db.Column(db.String(200))
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-
-class Feedback(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
-    submission_type = db.Column(db.String(100))
-    message = db.Column(db.Text, nullable=False)
-    submitted_at = db.Column(db.DateTime, default=datetime.utcnow)
-
+    
 @login_manager.user_loader
 def load_user(user_id):
     return User.query.get(int(user_id))
+
+# --- TASK 2: RSVP TABLE ---
+class RSVP(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    event_id = db.Column(db.Integer, db.ForeignKey('event.id'), nullable=False)
+    waitlisted = db.Column(db.Boolean, default=False)
