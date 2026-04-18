@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container mt-4">
+    <h1>Event Admin Panel</h1>
+    <form method="POST">
+        {{ form.hidden_tag() }}
+        
+        <div class="mb-3">
+            {{ form.name.label(class="form-label") }} 
+            {{ form.name(class="form-control") }}
+        </div>
+        
+        <div class="mb-3">
+            {{ form.venue.label(class="form-label") }} 
+            {{ form.venue(class="form-control") }}
+        </div>
+        
+        <div class="mb-3">
+            {{ form.sport_type.label(class="form-label") }} 
+            {{ form.sport_type(class="form-control") }}
+        </div>
+        
+        <div class="row">
+            <div class="col-md-4 mb-3">
+                {{ form.date.label(class="form-label") }} 
+                {{ form.date(class="form-control", type="date") }}
+            </div>
+            <div class="col-md-4 mb-3">
+                {{ form.time.label(class="form-label") }} 
+                {{ form.time(class="form-control", type="time") }}
+            </div>
+            <div class="col-md-4 mb-3">
+                {{ form.max_capacity.label(class="form-label") }} 
+                {{ form.max_capacity(class="form-control") }}
+            </div>
+        </div>
+        
+        {{ form.submit(class="btn btn-primary") }}
+    </form>
+    
+    <hr>
+    
+    <h3>Current Events</h3>
+    <ul>
+        {% for event in events %}
+            <li><strong>{{ event.name }}</strong> at {{ event.venue }} ({{ event.date }} - {{ event.time }})</li>
+        {% else %}
+            <p>No events have been created yet.</p>
+        {% endfor %}
+    </ul>
+</div>
+{% endblock %}

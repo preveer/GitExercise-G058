@@ -31,6 +31,23 @@ class Badge(db.Model):
     description = db.Column(db.String(250))
     image_file = db.Column(db.String(100), nullable=False, default='default_badge.png')
 
+# --- AAHTITIYA'S EVENT TABLE ---
+class Event(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(200), nullable=False)
+    venue = db.Column(db.String(200))
+    sport_type = db.Column(db.String(100))
+    date = db.Column(db.Date)      
+    time = db.Column(db.Time)      
+    max_capacity = db.Column(db.Integer)
+    
 @login_manager.user_loader
 def load_user(user_id):
     return User.query.get(int(user_id))
+
+# --- TASK 2: RSVP TABLE ---
+class RSVP(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    event_id = db.Column(db.Integer, db.ForeignKey('event.id'), nullable=False)
+    waitlisted = db.Column(db.Boolean, default=False)
