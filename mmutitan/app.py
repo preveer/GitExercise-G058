@@ -1,9 +1,10 @@
-from flask import Flask, render_template, url_for, flash, redirect
+import os
+import secrets
+from flask import Flask, render_template, url_for, flash, redirect, request
 from flask_login import login_user, current_user, logout_user, login_required
 from models import db, login_manager, User, Badge, Event, RSVP
-from forms import RegistrationForm, LoginForm, EventForm
+from forms import RegistrationForm, LoginForm, EventForm, ChangePasswordForm, UpdateProfileForm
 from config import Config
-from forms import ChangePasswordForm
 
 def create_app():
     app = Flask(__name__)
@@ -16,9 +17,17 @@ def create_app():
     with app.app_context():
         db.create_all()
 
+    # --- HELPER FUNCTION FOR PROFILE PHOTOS ---
+    def save_picture(form_picture):
+        random_hex = secrets.token_hex(8)
+        _, f_ext = os.path.splitext(form_picture.filename)
+        picture_fn = random_hex + f_ext
+        picture_path = os.path.join(app.root_path, 'static/profile_pics', picture_fn)
+        form_picture.save(picture_path)
+        return picture_fn
+
     @app.route('/')
     def home():
-        # If logged in, maybe show a dashboard. If not, show welcome.
         return render_template('home.html')
 
     @app.route('/register', methods=['GET', 'POST'])
@@ -60,9 +69,54 @@ def create_app():
     def logout():
         logout_user()
         flash('You have been logged out.', 'info')
-        # Redirecting to login so the user sees a change
         return redirect(url_for('login'))
 
+    # --- LUTHRA'S PROFILE ROUTES ---
+    @app.route('/profile')
+    @login_required
+    def profile():
+        return render_template('profile.html', title='My Profile', user=current_user)
+
+    @app.route('/profile/edit', methods=['GET', 'POST'])
+    @login_required
+    def edit_profile():
+        form = UpdateProfileForm()
+        if form.validate_on_submit():
+            if form.profile_photo.data:
+                picture_file = save_picture(form.profile_photo.data)
+                current_user.profile_photo = picture_file
+            
+            current_user.name = form.name.data
+            current_user.faculty = form.faculty.data
+            current_user.year = form.year.data
+            current_user.sport_preferences = form.sport_preferences.data
+            db.session.commit()
+            flash('Your profile has been updated!', 'success')
+            return redirect(url_for('profile'))
+        
+        elif request.method == 'GET':
+            form.name.data = current_user.name
+            form.faculty.data = current_user.faculty
+            form.year.data = current_user.year
+            form.sport_preferences.data = current_user.sport_preferences
+            
+        return render_template('edit_profile.html', title='Edit Profile', form=form)
+
+    @app.route('/change_password', methods=['GET', 'POST'])
+    @login_required
+    def change_password():
+        form = ChangePasswordForm()
+        if form.validate_on_submit():
+            if current_user.password == form.old_password.data:
+                current_user.password = form.new_password.data
+                db.session.commit()
+                flash('Your password has been updated!', 'success')
+                return redirect(url_for('home'))
+            else:
+                flash('Update Failed. Current password is incorrect.', 'danger')
+        return render_template('change_password.html', title='Change Password', form=form)
+
+    # --- AAHTITIYA'S EVENT ROUTES ---
     @app.route('/admin/events', methods=['GET', 'POST'])
     @login_required
     def manage_events():
@@ -94,35 +148,12 @@ def create_app():
         if existing_rsvp:
             flash('Already RSVP\'d!', 'info')
             return redirect(url_for('list_events'))
-
         count = RSVP.query.filter_by(event_id=event.id, waitlisted=False).count()
         new_rsvp = RSVP(user_id=current_user.id, event_id=event.id, waitlisted=(count >= event.max_capacity))
         db.session.add(new_rsvp)
         db.session.commit()
         flash('RSVP Successful!', 'success')
         return redirect(url_for('list_events'))
-    
-    @app.route('/change_password', methods=['GET', 'POST'])
-    @login_required
-    def change_password():
-        form = ChangePasswordForm()
-        if form.validate_on_submit():
-            # Verify if the current password matches what is in our database
-            if current_user.password == form.old_password.data:
-                current_user.password = form.new_password.data
-                db.session.commit()
-                flash('Your password has been updated successfully!', 'success')
-                return redirect(url_for('home'))
-            else:
-                # If they got their own password wrong, show an error
-                flash('Update Failed. Current password is incorrect.', 'danger')
-        return render_template('change_password.html', title='Change Password', form=form)
-    
-    @app.route('/profile')
-    @login_required
-    def profile():
-        # We use current_user to get the logged-in person's data
-        return render_template('profile.html', title='My Profile', user=current_user)
 
     return app
 

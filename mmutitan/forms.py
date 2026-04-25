@@ -47,3 +47,17 @@ class ChangePasswordForm(FlaskForm):
     confirm_password = PasswordField('Confirm New Password', 
                                     validators=[DataRequired(), EqualTo('new_password')])
     submit = SubmitField('Update Password')
+
+class UpdateProfileForm(FlaskForm):
+    name = StringField('Full Name', validators=[DataRequired(), Length(min=2, max=100)])
+    faculty = SelectField('Faculty', choices=[
+        ('FCI', 'Faculty of Computing & Informatics'),
+        ('FOE', 'Faculty of Engineering'),
+        ('FOM', 'Faculty of Management'),
+        ('FCM', 'Faculty of Creative Multimedia'),
+        ('FOL', 'Faculty of Law')
+    ])
+    year = IntegerField('Year of Study', validators=[DataRequired()])
+    sport_preferences = StringField('Favorite Sports')
+    profile_photo = FileField('Update Profile Photo', validators=[FileAllowed(['jpg', 'png', 'jpeg'])])
+    submit = SubmitField('Update Profile')

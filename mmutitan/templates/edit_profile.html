@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container mt-5">
+    <div class="card shadow border-0">
+        <div class="card-header bg-dark text-white">
+            <h4 class="mb-0">Edit Profile Details</h4>
+        </div>
+        <div class="card-body">
+            <form method="POST" enctype="multipart/form-data">
+                {{ form.hidden_tag() }}
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        {{ form.name.label(class="form-label") }}
+                        {{ form.name(class="form-control") }}
+                    </div>
+                    <div class="col-md-6">
+                        {{ form.faculty.label(class="form-label") }}
+                        {{ form.faculty(class="form-select") }}
+                    </div>
+                </div>
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        {{ form.year.label(class="form-label") }}
+                        {{ form.year(class="form-control") }}
+                    </div>
+                    <div class="col-md-6">
+                        {{ form.profile_photo.label(class="form-label") }}
+                        {{ form.profile_photo(class="form-control") }}
+                    </div>
+                </div>
+                <div class="mb-3">
+                    {{ form.sport_preferences.label(class="form-label") }}
+                    {{ form.sport_preferences(class="form-control") }}
+                </div>
+                {{ form.submit(class="btn btn-danger") }}
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
