@@ -3,6 +3,7 @@ from flask_login import login_user, current_user, logout_user, login_required
 from models import db, login_manager, User, Badge, Event, RSVP
 from forms import RegistrationForm, LoginForm, EventForm
 from config import Config
+from forms import ChangePasswordForm
 
 def create_app():
     app = Flask(__name__)
@@ -100,6 +101,22 @@ def create_app():
         db.session.commit()
         flash('RSVP Successful!', 'success')
         return redirect(url_for('list_events'))
+    
+    @app.route('/change_password', methods=['GET', 'POST'])
+    @login_required
+    def change_password():
+        form = ChangePasswordForm()
+        if form.validate_on_submit():
+            # Verify if the current password matches what is in our database
+            if current_user.password == form.old_password.data:
+                current_user.password = form.new_password.data
+                db.session.commit()
+                flash('Your password has been updated successfully!', 'success')
+                return redirect(url_for('home'))
+            else:
+                # If they got their own password wrong, show an error
+                flash('Update Failed. Current password is incorrect.', 'danger')
+        return render_template('change_password.html', title='Change Password', form=form)
 
     return app
 

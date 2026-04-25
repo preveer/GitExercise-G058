@@ -40,3 +40,10 @@ class EventForm(FlaskForm):
     time = TimeField('Time', validators=[DataRequired()])
     max_capacity = IntegerField('Max Capacity', validators=[DataRequired()])
     submit = SubmitField('Create Event')
+
+class ChangePasswordForm(FlaskForm):
+    old_password = PasswordField('Current Password', validators=[DataRequired()])
+    new_password = PasswordField('New Password', validators=[DataRequired(), Length(min=6)])
+    confirm_password = PasswordField('Confirm New Password', 
+                                    validators=[DataRequired(), EqualTo('new_password')])
+    submit = SubmitField('Update Password')
