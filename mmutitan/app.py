@@ -2,8 +2,8 @@ import os
 import secrets
 from flask import Flask, render_template, url_for, flash, redirect, request
 from flask_login import login_user, current_user, logout_user, login_required
-from models import db, login_manager, User, Badge, Event, RSVP
-from forms import RegistrationForm, LoginForm, EventForm, ChangePasswordForm, UpdateProfileForm
+from models import Task, db, login_manager, User, Badge, Event, RSVP
+from forms import RegistrationForm, LoginForm, EventForm, ChangePasswordForm, UpdateProfileForm, TaskForm 
 from config import Config
 
 def create_app():
@@ -29,7 +29,6 @@ def create_app():
     @app.route('/')
     def home():
         if current_user.is_authenticated:
-            # When we build the leaderboard later, we will fetch real data here
             return render_template('dashboard.html', title='Dashboard')
         return render_template('home.html')
 
@@ -157,6 +156,81 @@ def create_app():
         db.session.commit()
         flash('RSVP Successful!', 'success')
         return redirect(url_for('list_events'))
+    
+    # --- PREVEER'S TASK POOL ROUTES ---
+    
+    @app.route('/tasks')
+    @login_required
+    def student_tasks():
+        tasks = Task.query.all()
+        return render_template('student_tasks.html', title='Task Pool', tasks=tasks)
+
+    @app.route('/admin/tasks')
+    @login_required
+    def admin_tasks():
+        if not current_user.is_admin:
+            flash('Access denied. Admins only.', 'danger')
+            return redirect(url_for('home'))
+        tasks = Task.query.all()
+        return render_template('admin_tasks.html', title='Task Management', tasks=tasks)
+
+    @app.route('/admin/tasks/add', methods=['GET', 'POST'])
+    @login_required
+    def add_task():
+        if not current_user.is_admin:
+            flash('Access denied.', 'danger')
+            return redirect(url_for('home'))
+        form = TaskForm()
+        if form.validate_on_submit():
+            new_task = Task(
+                title=form.title.data,
+                description=form.description.data,
+                sport_category=form.sport_category.data,
+                difficulty=form.difficulty.data,
+                proof_required=form.proof_required.data
+            )
+            db.session.add(new_task)
+            db.session.commit()
+            flash('New task added successfully!', 'success')
+            return redirect(url_for('admin_tasks'))
+        return render_template('admin_task_form.html', title='Add Task', form=form, legend='Add New Task')
+
+    @app.route('/admin/tasks/edit/<int:task_id>', methods=['GET', 'POST'])
+    @login_required
+    def edit_task(task_id):
+        if not current_user.is_admin:
+            flash('Access denied.', 'danger')
+            return redirect(url_for('home'))
+        task = Task.query.get_or_404(task_id)
+        form = TaskForm()
+        if form.validate_on_submit():
+            task.title = form.title.data
+            task.description = form.description.data
+            task.sport_category = form.sport_category.data
+            task.difficulty = form.difficulty.data
+            task.proof_required = form.proof_required.data
+            db.session.commit()
+            flash('Task updated successfully!', 'success')
+            return redirect(url_for('admin_tasks'))
+        elif request.method == 'GET':
+            form.title.data = task.title
+            form.description.data = task.description
+            form.sport_category.data = task.sport_category
+            form.difficulty.data = task.difficulty
+            form.proof_required.data = task.proof_required
+        return render_template('admin_task_form.html', title='Edit Task', form=form, legend='Edit Task')
+
+    @app.route('/admin/tasks/delete/<int:task_id>', methods=['POST'])
+    @login_required
+    def delete_task(task_id):
+        if not current_user.is_admin:
+            flash('Access denied.', 'danger')
+            return redirect(url_for('home'))
+        task = Task.query.get_or_404(task_id)
+        db.session.delete(task)
+        db.session.commit()
+        flash('Task deleted successfully.', 'info')
+        return redirect(url_for('admin_tasks'))
 
     return app
 

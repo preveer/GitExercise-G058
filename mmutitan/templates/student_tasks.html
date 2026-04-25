@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container mt-5">
+    <h2 class="text-center mb-4 fw-bold">Available Titan Tasks</h2>
+    <p class="text-muted text-center">Complete these tasks to earn points and climb the leaderboard!</p>
+
+    <div class="row mt-4">
+        {% for task in tasks %}
+        <div class="col-md-4 mb-4">
+            <div class="card h-100 shadow-sm border-0">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between mb-2">
+                        <span class="badge bg-dark">{{ task.sport_category }}</span>
+                        <span class="badge {% if task.difficulty == 'Easy' %}bg-success{% elif task.difficulty == 'Medium' %}bg-warning text-dark{% else %}bg-danger{% endif %}">
+                            {{ task.difficulty }}
+                        </span>
+                    </div>
+                    <h5 class="card-title fw-bold">{{ task.title }}</h5>
+                    <p class="card-text text-secondary">{{ task.description }}</p>
+                </div>
+                <div class="card-footer bg-white border-0 pb-3">
+                    <button class="btn btn-outline-danger w-100">Accept Task</button>
+                </div>
+            </div>
+        </div>
+        {% else %}
+        <div class="col-12 text-center">
+            <p class="text-muted">No tasks available right now. Check back later!</p>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

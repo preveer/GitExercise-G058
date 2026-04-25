@@ -4,23 +4,20 @@
     <div class="row justify-content-center">
         <div class="col-md-8">
             <div class="card shadow border-0">
-                <div class="card-header bg-dark text-white py-3">
+                <div class="card-header bg-dark text-white py-3 text-center">
                     <h4 class="mb-0 fw-bold">{{ legend }}</h4>
                 </div>
                 <div class="card-body p-4">
-                    <form method="POST" action="">
+                    <form method="POST">
                         {{ form.hidden_tag() }}
-                        
                         <div class="mb-3">
                             {{ form.title.label(class="form-label fw-bold") }}
                             {{ form.title(class="form-control") }}
                         </div>
-                        
                         <div class="mb-3">
                             {{ form.description.label(class="form-label fw-bold") }}
                             {{ form.description(class="form-control", rows="3") }}
                         </div>
-                        
                         <div class="row mb-3">
                             <div class="col-md-6">
                                 {{ form.sport_category.label(class="form-label fw-bold") }}
@@ -31,16 +28,13 @@
                                 {{ form.difficulty(class="form-select") }}
                             </div>
                         </div>
-
                         <div class="form-check mb-4">
                             {{ form.proof_required(class="form-check-input") }}
                             {{ form.proof_required.label(class="form-check-label fw-bold") }}
-                            <small class="d-block text-muted">Check this if students must upload a photo to complete this task.</small>
                         </div>
-                        
-                        <div class="d-flex gap-2">
-                            {{ form.submit(class="btn btn-danger w-100") }}
-                            <a href="{{ url_for('admin_tasks') }}" class="btn btn-outline-secondary w-100">Cancel</a>
+                        <div class="d-grid gap-2">
+                            {{ form.submit(class="btn btn-danger btn-lg") }}
+                            <a href="{{ url_for('admin_tasks') }}" class="btn btn-outline-secondary">Cancel</a>
                         </div>
                     </form>
                 </div>
