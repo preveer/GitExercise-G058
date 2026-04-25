@@ -2,33 +2,33 @@
 {% block content %}
 <div class="container mt-5">
     <div class="row justify-content-center">
-        <div class="col-md-6">
+        <div class="col-md-5">
             <div class="card shadow border-0">
-                <div class="card-header bg-dark text-white text-center">
-                    <h4>Titan Login</h4>
+                <div class="card-header bg-dark text-white text-center py-3">
+                    <h3 class="fw-bold mb-0">TITAN LOGIN</h3>
                 </div>
                 <div class="card-body p-4">
                     <form method="POST" action="">
                         {{ form.hidden_tag() }}
                         <div class="mb-3">
-                            {{ form.email.label(class="form-label") }}
-                            {{ form.email(class="form-control") }}
+                            {{ form.email.label(class="form-label fw-bold") }}
+                            {{ form.email(class="form-control", placeholder="name@mmu.edu.my") }}
                         </div>
                         <div class="mb-3">
-                            {{ form.password.label(class="form-label") }}
+                            {{ form.password.label(class="form-label fw-bold") }}
                             {{ form.password(class="form-control") }}
                         </div>
-                        <div class="form-check mb-3">
+                        <div class="form-check mb-4">
                             {{ form.remember(class="form-check-input") }}
                             {{ form.remember.label(class="form-check-label") }}
                         </div>
                         <div class="d-grid">
-                            {{ form.submit(class="btn btn-danger") }}
+                            {{ form.submit(class="btn btn-danger btn-lg") }}
                         </div>
                     </form>
                 </div>
-                <div class="card-footer text-center">
-                    <small>Need an account? <a href="{{ url_for('register') }}">Join now</a></small>
+                <div class="card-footer text-center py-3">
+                    <span>New to the Arena? <a href="{{ url_for('register') }}" class="text-danger fw-bold text-decoration-none">Create Account</a></span>
                 </div>
             </div>
         </div>

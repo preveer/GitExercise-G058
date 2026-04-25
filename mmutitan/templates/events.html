@@ -1,32 +1,23 @@
 {% extends "base.html" %}
 {% block content %}
 <div class="container mt-4">
-    <h2 class="mb-4">Upcoming Campus Events</h2>
-    
+    <h2 class="fw-bold mb-4">Campus Sporting Events</h2>
     <div class="row">
         {% for event in events %}
         <div class="col-md-4 mb-4">
-            <div class="card h-100 shadow-sm">
+            <div class="card h-100 border-0 shadow-sm">
                 <div class="card-body">
-                    <h4 class="card-title text-primary">{{ event.name }}</h4>
-                    <h6 class="card-subtitle mb-3 text-muted">{{ event.sport_type }}</h6>
-                    
-                    <ul class="list-unstyled">
-                        <li><strong>📍 Venue:</strong> {{ event.venue }}</li>
-                        <li><strong>📅 Date:</strong> {{ event.date }}</li>
-                        <li><strong>⏰ Time:</strong> {{ event.time }}</li>
-                        <li><strong>👥 Capacity:</strong> {{ event.max_capacity }} players</li>
-                    </ul>
-                    
+                    <span class="badge bg-danger mb-2">{{ event.sport_type }}</span>
+                    <h5 class="card-title fw-bold">{{ event.name }}</h5>
+                    <p class="card-text text-muted">
+                        <i class="bi bi-geo-alt"></i> {{ event.venue }}<br>
+                        <i class="bi bi-calendar"></i> {{ event.date }} at {{ event.time }}
+                    </p>
                     <form action="{{ url_for('rsvp', event_id=event.id) }}" method="POST">
-                        <button type="submit" class="btn btn-success w-100 mt-2">RSVP Now</button>
+                        <button type="submit" class="btn btn-outline-dark w-100">Join Event</button>
                     </form>
                 </div>
             </div>
-        </div>
-        {% else %}
-        <div class="col-12">
-            <div class="alert alert-info">No events are scheduled right now. Tell an Admin to create some!</div>
         </div>
         {% endfor %}
     </div>

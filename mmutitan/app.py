@@ -8,7 +8,6 @@ def create_app():
     app = Flask(__name__)
     app.config.from_object(Config)
 
-    # Initialize extensions
     db.init_app(app)
     login_manager.init_app(app)
     login_manager.login_view = 'login'
@@ -18,7 +17,8 @@ def create_app():
 
     @app.route('/')
     def home():
-        return render_template('base.html')
+        # If logged in, maybe show a dashboard. If not, show welcome.
+        return render_template('home.html')
 
     @app.route('/register', methods=['GET', 'POST'])
     def register():
@@ -29,15 +29,15 @@ def create_app():
             user = User(
                 name=form.name.data,
                 email=form.email.data,
-                password=form.password.data, # Note: Hashing is usually done here for real apps
+                password=form.password.data,
                 faculty=form.faculty.data,
                 year=form.year.data,
                 sport_preferences=form.sport_preferences.data
             )
             db.session.add(user)
             db.session.commit()
-            flash('Account created! You can now log in.', 'success')
-            return redirect(url_for('login')) 
+            flash('Account created! Please log in.', 'success')
+            return redirect(url_for('login'))
         return render_template('register.html', title='Register', form=form)
 
     @app.route('/login', methods=['GET', 'POST'])
@@ -59,30 +59,26 @@ def create_app():
     def logout():
         logout_user()
         flash('You have been logged out.', 'info')
-        return redirect(url_for('home'))
+        # Redirecting to login so the user sees a change
+        return redirect(url_for('login'))
 
-    # --- AAHTITIYA'S FIXED ROUTE  ---
     @app.route('/admin/events', methods=['GET', 'POST'])
+    @login_required
     def manage_events():
         form = EventForm()
         if form.validate_on_submit():
             new_event = Event(
-                name=form.name.data,
-                venue=form.venue.data,
-                sport_type=form.sport_type.data,
-                date=form.date.data,
-                time=form.time.data,
-                max_capacity=form.max_capacity.data
+                name=form.name.data, venue=form.venue.data,
+                sport_type=form.sport_type.data, date=form.date.data,
+                time=form.time.data, max_capacity=form.max_capacity.data
             )
             db.session.add(new_event)
             db.session.commit()
             flash('Event successfully created!', 'success')
             return redirect(url_for('manage_events'))
-        
         events = Event.query.all()
         return render_template('admin_events.html', events=events, form=form)
 
-    # --- TASK 2: VIEW EVENTS & RSVP ---
     @app.route('/events')
     @login_required
     def list_events():
@@ -93,29 +89,16 @@ def create_app():
     @login_required
     def rsvp(event_id):
         event = Event.query.get_or_404(event_id)
-        
-        # 1. Check if the user already joined
         existing_rsvp = RSVP.query.filter_by(user_id=current_user.id, event_id=event.id).first()
         if existing_rsvp:
-            flash('You are already on the list for this event!', 'info')
+            flash('Already RSVP\'d!', 'info')
             return redirect(url_for('list_events'))
 
-        # 2. Check how many people are currently going (excluding waitlist)
-        current_rsvps = RSVP.query.filter_by(event_id=event.id, waitlisted=False).count()
-        
-        # 3. The Waitlist Math
-        is_waitlisted = current_rsvps >= event.max_capacity
-
-        # 4. Save to database
-        new_rsvp = RSVP(user_id=current_user.id, event_id=event.id, waitlisted=is_waitlisted)
+        count = RSVP.query.filter_by(event_id=event.id, waitlisted=False).count()
+        new_rsvp = RSVP(user_id=current_user.id, event_id=event.id, waitlisted=(count >= event.max_capacity))
         db.session.add(new_rsvp)
         db.session.commit()
-
-        if is_waitlisted:
-            flash(f'Event is full! You have been added to the WAITLIST for {event.name}.', 'warning')
-        else:
-            flash(f'Successfully RSVP\'d for {event.name}!', 'success')
-            
+        flash('RSVP Successful!', 'success')
         return redirect(url_for('list_events'))
 
     return app

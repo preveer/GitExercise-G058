@@ -5,6 +5,7 @@ from datetime import datetime
 db = SQLAlchemy()
 login_manager = LoginManager()
 
+# Helper table for many-to-many relationship
 user_badges = db.Table('user_badges',
     db.Column('user_id', db.Integer, db.ForeignKey('user.id'), primary_key=True),
     db.Column('badge_id', db.Integer, db.ForeignKey('badge.id'), primary_key=True)
@@ -24,30 +25,27 @@ class User(UserMixin, db.Model):
     
     badges = db.relationship('Badge', secondary=user_badges, backref=db.backref('users', lazy='dynamic'))
 
-
 class Badge(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     title = db.Column(db.String(100), nullable=False)
     description = db.Column(db.String(250))
     image_file = db.Column(db.String(100), nullable=False, default='default_badge.png')
 
-# --- AAHTITIYA'S EVENT TABLE ---
 class Event(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(200), nullable=False)
     venue = db.Column(db.String(200))
     sport_type = db.Column(db.String(100))
-    date = db.Column(db.Date)      
-    time = db.Column(db.Time)      
+    date = db.Column(db.Date)  
+    time = db.Column(db.Time)  
     max_capacity = db.Column(db.Integer)
-    
-@login_manager.user_loader
-def load_user(user_id):
-    return User.query.get(int(user_id))
 
-# --- TASK 2: RSVP TABLE ---
 class RSVP(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     event_id = db.Column(db.Integer, db.ForeignKey('event.id'), nullable=False)
     waitlisted = db.Column(db.Boolean, default=False)
+
+@login_manager.user_loader
+def load_user(user_id):
+    return User.query.get(int(user_id))

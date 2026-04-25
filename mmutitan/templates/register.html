@@ -1,18 +1,17 @@
 {% extends "base.html" %}
-
 {% block content %}
 <div class="container mt-5">
     <div class="row justify-content-center">
         <div class="col-md-8">
             <div class="card shadow-lg border-0 mb-5">
-                <div class="card-header bg-dark text-white text-center py-4">
+                <div class="card-header bg-dark text-white text-center">
                     <h2 class="fw-bold">JOIN THE TITANS</h2>
                     <p class="mb-0 text-muted">Register to start your campus fitness journey</p>
                 </div>
-                
                 <div class="card-body p-4 p-md-5">
                     <form method="POST" action="" enctype="multipart/form-data">
-                        {{ form.hidden_tag() }} <div class="row mb-3">
+                        {{ form.hidden_tag() }}
+                        <div class="row mb-3">
                             <div class="col-md-6">
                                 {{ form.name.label(class="form-label fw-bold") }}
                                 {{ form.name(class="form-control", placeholder="John Doe") }}
@@ -22,7 +21,6 @@
                                 {{ form.email(class="form-control", placeholder="student@mmu.edu.my") }}
                             </div>
                         </div>
-
                         <div class="row mb-3">
                             <div class="col-md-6">
                                 {{ form.password.label(class="form-label fw-bold") }}
@@ -33,7 +31,6 @@
                                 {{ form.confirm_password(class="form-control") }}
                             </div>
                         </div>
-
                         <div class="row mb-3">
                             <div class="col-md-6">
                                 {{ form.faculty.label(class="form-label fw-bold") }}
@@ -44,26 +41,22 @@
                                 {{ form.year(class="form-control", type="number") }}
                             </div>
                         </div>
-
                         <div class="mb-3">
                             {{ form.sport_preferences.label(class="form-label fw-bold") }}
                             {{ form.sport_preferences(class="form-control", placeholder="e.g., Badminton, Football, Gym") }}
                         </div>
-
                         <div class="mb-4">
                             {{ form.profile_photo.label(class="form-label fw-bold") }}
                             {{ form.profile_photo(class="form-control") }}
                             <small class="text-muted">Select a cool photo for your profile</small>
                         </div>
-
                         <div class="d-grid gap-2">
                             {{ form.submit(class="btn btn-primary btn-lg", style="background-color: #d9534f; border: none;") }}
                         </div>
                     </form>
                 </div>
-                
                 <div class="card-footer text-center py-3 bg-light">
-                    <span>Already a Titan? <a href="{{ url_for('home') }}" class="text-danger fw-bold text-decoration-none">Login here</a></span>
+                    <span>Already a Titan? <a href="{{ url_for('login') }}" class="text-danger fw-bold text-decoration-none">Login here</a></span>
                 </div>
             </div>
         </div>
