@@ -12,7 +12,8 @@ user_badges = db.Table('user_badges',
 )
 
 class User(UserMixin, db.Model):
-    id = db.Column(db.Integer, primary_key=True)
+    id = db.Column(# ... keep your existing fields ...
+        db.Integer, primary_key=True)
     name = db.Column(db.String(100), nullable=False)
     email = db.Column(db.String(120), unique=True, nullable=False)
     password = db.Column(db.String(200), nullable=False)
@@ -22,6 +23,9 @@ class User(UserMixin, db.Model):
     profile_photo = db.Column(db.String(200), default='default.jpg')
     is_admin = db.Column(db.Boolean, default=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    # NEW: Tracks the student's total score for the leaderboard
+    points = db.Column(db.Integer, default=0)
     
     badges = db.relationship('Badge', secondary=user_badges, backref=db.backref('users', lazy='dynamic'))
 
@@ -55,6 +59,9 @@ class RSVP(db.Model):
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     event_id = db.Column(db.Integer, db.ForeignKey('event.id'), nullable=False)
     waitlisted = db.Column(db.Boolean, default=False)
+    
+    # NEW: Tracks if the student has checked in to earn points/badges
+    checked_in = db.Column(db.Boolean, default=False)
 
 @login_manager.user_loader
 def load_user(user_id):

@@ -12,7 +12,6 @@
                 
                 <div class="d-grid gap-2">
                     <a href="{{ url_for('change_password') }}" class="btn btn-outline-dark btn-sm">Change Password</a>
-                    
                     <a href="{{ url_for('edit_profile') }}" class="btn btn-danger btn-sm">Edit Profile</a>
                 </div>
             </div>
@@ -23,13 +22,12 @@
                 <div class="col-md-6">
                     <div class="card shadow border-0 bg-dark text-white p-3 text-center">
                         <h6 class="text-uppercase small">Current Streak</h6>
-                        <h2 class="fw-bold">0 Days</h2>
-                    </div>
+                        <h2 class="fw-bold">0 Days</h2> </div>
                 </div>
                 <div class="col-md-6">
                     <div class="card shadow border-0 bg-danger text-white p-3 text-center">
                         <h6 class="text-uppercase small">Total Points</h6>
-                        <h2 class="fw-bold">0 pts</h2>
+                        <h2 class="fw-bold">{{ user.points }} pts</h2>
                     </div>
                 </div>
             </div>
@@ -41,7 +39,17 @@
 
             <div class="card shadow border-0 p-4">
                 <h5 class="fw-bold border-bottom pb-2">Badges Earned</h5>
-                <p class="text-muted">Complete tasks to earn your first badge!</p>
+                <div class="d-flex flex-wrap gap-3 mt-3">
+                    {% for badge in user.badges %}
+                        <div class="text-center" style="width: 100px;">
+                            <img src="{{ url_for('static', filename='uploads/default_badge.png') }}" 
+                                 alt="{{ badge.title }}" class="img-fluid rounded-circle border p-1 mb-1">
+                            <p class="small fw-bold mb-0 text-dark">{{ badge.title }}</p>
+                        </div>
+                    {% else %}
+                        <p class="text-muted">Attend events or complete tasks to earn your first badge!</p>
+                    {% endfor %}
+                </div>
             </div>
         </div>
     </div>

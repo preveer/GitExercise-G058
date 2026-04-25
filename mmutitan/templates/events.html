@@ -11,11 +11,44 @@
                     <h5 class="card-title fw-bold">{{ event.name }}</h5>
                     <p class="card-text text-muted">
                         <i class="bi bi-geo-alt"></i> {{ event.venue }}<br>
-                        <i class="bi bi-calendar"></i> {{ event.date }} at {{ event.time }}
+                        <i class="bi bi-calendar"></i> {{ event.date }} at {{ event.time }}<br>
+                        
+                        {% if spots_left[event.id] > 0 %}
+                            Spots Left: <span class="fw-bold text-success">{{ spots_left[event.id] }}</span>
+                        {% else %}
+                            <span class="fw-bold text-danger">FULL</span>
+                        {% endif %}
                     </p>
-                    <form action="{{ url_for('rsvp', event_id=event.id) }}" method="POST">
-                        <button type="submit" class="btn btn-outline-dark w-100">Join Event</button>
-                    </form>
+                    
+                    {% set my_rsvp = user_rsvps.get(event.id) %}
+                    
+                    {% if my_rsvp %}
+                        {% if my_rsvp.waitlisted %}
+                            <div class="alert alert-warning py-2 small text-center">You are on the Waitlist</div>
+                            <form action="{{ url_for('cancel_rsvp', event_id=event.id) }}" method="POST">
+                                <button type="submit" class="btn btn-outline-danger w-100">Leave Waitlist</button>
+                            </form>
+                        {% elif my_rsvp.checked_in %}
+                            <div class="alert alert-success py-2 small text-center">✓ Checked In</div>
+                        {% else %}
+                            <form action="{{ url_for('checkin', event_id=event.id) }}" method="POST" class="mb-2">
+                                <button type="submit" class="btn btn-primary w-100">Check In</button>
+                            </form>
+                            <form action="{{ url_for('cancel_rsvp', event_id=event.id) }}" method="POST">
+                                <button type="submit" class="btn btn-outline-danger w-100">Cancel RSVP</button>
+                            </form>
+                        {% endif %}
+                    
+                    {% elif spots_left[event.id] <= 0 %}
+                        <form action="{{ url_for('rsvp', event_id=event.id) }}" method="POST">
+                            <button type="submit" class="btn btn-warning w-100">Join Waitlist</button>
+                        </form>
+                    {% else %}
+                        <form action="{{ url_for('rsvp', event_id=event.id) }}" method="POST">
+                            <button type="submit" class="btn btn-success w-100">RSVP Now</button>
+                        </form>
+                    {% endif %}
+                    
                 </div>
             </div>
         </div>

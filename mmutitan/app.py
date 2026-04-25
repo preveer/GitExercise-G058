@@ -140,7 +140,15 @@ def create_app():
     @login_required
     def list_events():
         events = Event.query.all()
-        return render_template('events.html', events=events)
+        # Create a dictionary of the user's RSVPs for easy checking in HTML
+        user_rsvps = {rsvp.event_id: rsvp for rsvp in RSVP.query.filter_by(user_id=current_user.id).all()}
+        
+        spots_left = {}
+        for event in events:
+            confirmed_count = RSVP.query.filter_by(event_id=event.id, waitlisted=False).count()
+            spots_left[event.id] = event.max_capacity - confirmed_count
+            
+        return render_template('events.html', events=events, user_rsvps=user_rsvps, spots_left=spots_left)
 
     @app.route('/rsvp/<int:event_id>', methods=['POST'])
     @login_required
@@ -156,9 +164,48 @@ def create_app():
         db.session.commit()
         flash('RSVP Successful!', 'success')
         return redirect(url_for('list_events'))
+        
+    @app.route('/cancel_rsvp/<int:event_id>', methods=['POST'])
+    @login_required
+    def cancel_rsvp(event_id):
+        rsvp = RSVP.query.filter_by(user_id=current_user.id, event_id=event_id).first()
+        if not rsvp:
+            flash('You are not RSVP\'d.', 'danger')
+            return redirect(url_for('list_events'))
+        was_confirmed = not rsvp.waitlisted
+        db.session.delete(rsvp)
+        if was_confirmed:
+            next_in_line = RSVP.query.filter_by(event_id=event_id, waitlisted=True).order_by(RSVP.id).first()
+            if next_in_line:
+                next_in_line.waitlisted = False 
+        db.session.commit()
+        flash('RSVP successfully cancelled.', 'success')
+        return redirect(url_for('list_events'))
+
+    # NEW: Check-in logic to award points and badge
+    @app.route('/checkin/<int:event_id>', methods=['POST'])
+    @login_required
+    def checkin(event_id):
+        rsvp = RSVP.query.filter_by(user_id=current_user.id, event_id=event_id).first()
+        if rsvp and not rsvp.waitlisted and not rsvp.checked_in:
+            rsvp.checked_in = True
+            current_user.points += 50 # Bonus points!
+            
+            # Award Badge
+            event_badge = Badge.query.filter_by(title="Event Attended").first()
+            if not event_badge:
+                event_badge = Badge(title="Event Attended", description="Attended a campus sporting event!")
+                db.session.add(event_badge)
+            if event_badge not in current_user.badges:
+                current_user.badges.append(event_badge)
+                
+            db.session.commit()
+            flash('Checked in! +50 Points and Badge earned!', 'success')
+        else:
+            flash('Check-in failed. You must have a confirmed spot.', 'danger')
+        return redirect(url_for('list_events'))
     
     # --- PREVEER'S TASK POOL ROUTES ---
-    
     @app.route('/tasks')
     @login_required
     def student_tasks():
@@ -169,7 +216,7 @@ def create_app():
     @login_required
     def admin_tasks():
         if not current_user.is_admin:
-            flash('Access denied. Admins only.', 'danger')
+            flash('Access denied.', 'danger')
             return redirect(url_for('home'))
         tasks = Task.query.all()
         return render_template('admin_tasks.html', title='Task Management', tasks=tasks)
@@ -178,58 +225,37 @@ def create_app():
     @login_required
     def add_task():
         if not current_user.is_admin:
-            flash('Access denied.', 'danger')
             return redirect(url_for('home'))
         form = TaskForm()
         if form.validate_on_submit():
-            new_task = Task(
-                title=form.title.data,
-                description=form.description.data,
-                sport_category=form.sport_category.data,
-                difficulty=form.difficulty.data,
-                proof_required=form.proof_required.data
-            )
+            new_task = Task(title=form.title.data, description=form.description.data,
+                           sport_category=form.sport_category.data, difficulty=form.difficulty.data,
+                           proof_required=form.proof_required.data)
             db.session.add(new_task)
             db.session.commit()
-            flash('New task added successfully!', 'success')
+            flash('New task added!', 'success')
             return redirect(url_for('admin_tasks'))
-        return render_template('admin_task_form.html', title='Add Task', form=form, legend='Add New Task')
+        return render_template('admin_task_form.html', form=form, legend='Add New Task')
 
     @app.route('/admin/tasks/edit/<int:task_id>', methods=['GET', 'POST'])
     @login_required
     def edit_task(task_id):
-        if not current_user.is_admin:
-            flash('Access denied.', 'danger')
-            return redirect(url_for('home'))
         task = Task.query.get_or_404(task_id)
         form = TaskForm()
         if form.validate_on_submit():
-            task.title = form.title.data
-            task.description = form.description.data
-            task.sport_category = form.sport_category.data
-            task.difficulty = form.difficulty.data
-            task.proof_required = form.proof_required.data
+            task.title, task.description = form.title.data, form.description.data
             db.session.commit()
-            flash('Task updated successfully!', 'success')
             return redirect(url_for('admin_tasks'))
         elif request.method == 'GET':
-            form.title.data = task.title
-            form.description.data = task.description
-            form.sport_category.data = task.sport_category
-            form.difficulty.data = task.difficulty
-            form.proof_required.data = task.proof_required
-        return render_template('admin_task_form.html', title='Edit Task', form=form, legend='Edit Task')
+            form.title.data, form.description.data = task.title, task.description
+        return render_template('admin_task_form.html', form=form, legend='Edit Task')
 
     @app.route('/admin/tasks/delete/<int:task_id>', methods=['POST'])
     @login_required
     def delete_task(task_id):
-        if not current_user.is_admin:
-            flash('Access denied.', 'danger')
-            return redirect(url_for('home'))
         task = Task.query.get_or_404(task_id)
         db.session.delete(task)
         db.session.commit()
-        flash('Task deleted successfully.', 'info')
         return redirect(url_for('admin_tasks'))
 
     return app
