@@ -1,6 +1,6 @@
 from flask_wtf import FlaskForm
 from flask_wtf.file import FileField, FileAllowed
-from wtforms import StringField, PasswordField, SubmitField, IntegerField, SelectField, BooleanField, DateField, TimeField
+from wtforms import StringField, PasswordField, SubmitField, IntegerField, SelectField, BooleanField, DateField, TimeField, TextAreaField
 from wtforms.validators import DataRequired, Length, Email, EqualTo, ValidationError
 from models import User
 
@@ -61,3 +61,22 @@ class UpdateProfileForm(FlaskForm):
     sport_preferences = StringField('Favorite Sports')
     profile_photo = FileField('Update Profile Photo', validators=[FileAllowed(['jpg', 'png', 'jpeg'])])
     submit = SubmitField('Update Profile')
+
+# --- PREVEER'S TASK POOL FORM ---
+class TaskForm(FlaskForm):
+    title = StringField('Task Title', validators=[DataRequired()])
+    description = TextAreaField('Description', validators=[DataRequired()])
+    sport_category = SelectField('Sport Category', choices=[
+        ('General', 'General'), 
+        ('Running', 'Running'), 
+        ('Gym', 'Gym'), 
+        ('Badminton', 'Badminton'),
+        ('Swimming', 'Swimming')
+    ], validators=[DataRequired()])
+    difficulty = SelectField('Difficulty', choices=[
+        ('Easy', 'Easy'), 
+        ('Medium', 'Medium'), 
+        ('Hard', 'Hard')
+    ], validators=[DataRequired()])
+    proof_required = BooleanField('Proof Required?')
+    submit = SubmitField('Save Task')

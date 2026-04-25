@@ -31,6 +31,16 @@ class Badge(db.Model):
     description = db.Column(db.String(250))
     image_file = db.Column(db.String(100), nullable=False, default='default_badge.png')
 
+# --- PREVEER'S TASK TABLE ---
+class Task(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    title = db.Column(db.String(200), nullable=False)
+    description = db.Column(db.Text, nullable=False)
+    sport_category = db.Column(db.String(100), nullable=False)
+    difficulty = db.Column(db.String(50), nullable=False)
+    proof_required = db.Column(db.Boolean, default=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
 class Event(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(200), nullable=False)
