@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container mt-5">
+    <div class="row">
+        <div class="col-md-4">
+            <div class="card shadow border-0 text-center p-4">
+                <img src="{{ url_for('static', filename='profile_pics/' + current_user.profile_photo) }}" 
+                     class="rounded-circle img-thumbnail mx-auto" style="width: 150px; height: 150px; object-fit: cover;">
+                <h3 class="fw-bold mt-3">{{ user.name }}</h3>
+                <p class="text-muted">{{ user.faculty }} | Year {{ user.year }}</p>
+                <div class="d-grid gap-2">
+                    <a href="{{ url_for('change_password') }}" class="btn btn-outline-dark btn-sm">Change Password</a>
+                    <button class="btn btn-danger btn-sm">Edit Profile</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-8">
+            <div class="row mb-4">
+                <div class="col-md-6">
+                    <div class="card shadow border-0 bg-dark text-white p-3 text-center">
+                        <h6 class="text-uppercase small">Current Streak</h6>
+                        <h2 class="fw-bold">0 Days</h2>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="card shadow border-0 bg-danger text-white p-3 text-center">
+                        <h6 class="text-uppercase small">Total Points</h6>
+                        <h2 class="fw-bold">0 pts</h2>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card shadow border-0 p-4 mb-4">
+                <h5 class="fw-bold border-bottom pb-2">Sport Preferences</h5>
+                <p>{{ user.sport_preferences or "No preferences set yet." }}</p>
+            </div>
+
+            <div class="card shadow border-0 p-4">
+                <h5 class="fw-bold border-bottom pb-2">Badges Earned</h5>
+                <p class="text-muted">Complete tasks to earn your first badge!</p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

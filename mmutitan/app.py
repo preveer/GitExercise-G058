@@ -117,6 +117,12 @@ def create_app():
                 # If they got their own password wrong, show an error
                 flash('Update Failed. Current password is incorrect.', 'danger')
         return render_template('change_password.html', title='Change Password', form=form)
+    
+    @app.route('/profile')
+    @login_required
+    def profile():
+        # We use current_user to get the logged-in person's data
+        return render_template('profile.html', title='My Profile', user=current_user)
 
     return app
 
