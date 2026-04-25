@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container mt-4">
+    <div class="alert alert-warning border-0 shadow-sm p-4 mb-4" role="alert">
+        <h4 class="alert-heading fw-bold">🏆 Weekly Titan Shoutout!</h4>
+        <p class="mb-0">Congratulations to <strong>Team FCI</strong> for dominating the leaderboard last week! Keep moving, Titans!</p>
+    </div>
+
+    <div class="row">
+        <div class="col-md-8">
+            <div class="row mb-4">
+                <div class="col-md-6">
+                    <div class="card border-0 shadow-sm bg-dark text-white p-4">
+                        <h5 class="text-uppercase small fw-bold">Daily Streak</h5>
+                        <h1 class="display-4 fw-bold mb-0">🔥 5</h1>
+                        <p class="mb-0 small">Days strong! Don't break it.</p>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="card border-0 shadow-sm bg-danger text-white p-4">
+                        <h5 class="text-uppercase small fw-bold">Leaderboard Rank</h5>
+                        <h1 class="display-4 fw-bold mb-0">#12</h1>
+                        <p class="mb-0 small">Top 15% of MMU students.</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card border-0 shadow-sm p-4 mb-4">
+                <h5 class="fw-bold mb-3">Today's Progress</h5>
+                <div class="progress" style="height: 25px;">
+                    <div class="progress-bar bg-success" role="progressbar" style="width: 60%;" aria-valuenow="60" aria-valuemin="0" aria-valuemax="100">60% Complete</div>
+                </div>
+                <p class="mt-2 text-muted small">Complete 2 more tasks to hit your daily goal!</p>
+            </div>
+
+            <div class="card border-0 shadow-sm p-4">
+                <h5 class="fw-bold mb-3">Recent Campus Activity</h5>
+                <ul class="list-group list-group-flush">
+                    <li class="list-group-item px-0">👟 <strong>Preveer</strong> just completed a 5km run at the MMU Track.</li>
+                    <li class="list-group-item px-0">🏸 <strong>Aahtitiya</strong> is looking for a Badminton buddy at MPH.</li>
+                    <li class="list-group-item px-0">🔥 <strong>Luthra</strong> just hit a 5-day streak!</li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm p-4 bg-white mb-4">
+                <h5 class="fw-bold">Total Points</h5>
+                <h2 class="text-danger fw-bold">1,250 <small class="text-muted fs-6">pts</small></h2>
+                <hr>
+                <a href="{{ url_for('list_events') }}" class="btn btn-outline-dark w-100 mb-2">Find Buddy</a>
+                <a href="{{ url_for('profile') }}" class="btn btn-dark w-100">View My Badges</a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -28,6 +28,9 @@ def create_app():
 
     @app.route('/')
     def home():
+        if current_user.is_authenticated:
+            # When we build the leaderboard later, we will fetch real data here
+            return render_template('dashboard.html', title='Dashboard')
         return render_template('home.html')
 
     @app.route('/register', methods=['GET', 'POST'])
