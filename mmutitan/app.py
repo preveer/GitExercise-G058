@@ -2,9 +2,11 @@ import os
 import secrets
 from flask import Flask, render_template, url_for, flash, redirect, request
 from flask_login import login_user, current_user, logout_user, login_required
-from models import Task, db, login_manager, User, Badge, Event, RSVP
+from models import Task, db, login_manager, User, Badge, Event, RSVP, UserTask
 from forms import RegistrationForm, LoginForm, EventForm, ChangePasswordForm, UpdateProfileForm, TaskForm 
 from config import Config
+import random
+from datetime import date
 
 def create_app():
     app = Flask(__name__)
@@ -257,6 +259,87 @@ def create_app():
         db.session.delete(task)
         db.session.commit()
         return redirect(url_for('admin_tasks'))
+    
+    @app.route('/daily_tasks')
+    @login_required
+    def daily_tasks():
+        today = date.today()
+
+        # 1. Check if the user already has tasks assigned for TODAY
+        today_tasks = UserTask.query.filter(
+            UserTask.user_id == current_user.id,
+            db.func.date(UserTask.date_accepted) == today
+        ).all()
+
+        # 2. If they have NO tasks for today, generate 3 random ones!
+        if len(today_tasks) == 0:
+            # Try to match their sport preference first
+            if current_user.sport_preferences:
+                pool = Task.query.filter(Task.sport_category.ilike(f"%{current_user.sport_preferences}%")).all()
+            else:
+                pool = Task.query.all()
+
+            # If the specific pool is too small, just use all available tasks
+            if len(pool) < 3:
+                pool = Task.query.all()
+
+            # Pick up to 3 random tasks
+            if len(pool) > 0:
+                chosen_tasks = random.sample(pool, min(3, len(pool)))
+                
+                # Assign them to the user
+                for t in chosen_tasks:
+                    new_ut = UserTask(user_id=current_user.id, task_id=t.id, status='In Progress')
+                    db.session.add(new_ut)
+                db.session.commit()
+
+                # Refresh the list to show them on the page
+                today_tasks = UserTask.query.filter(
+                    UserTask.user_id == current_user.id,
+                    db.func.date(UserTask.date_accepted) == today
+                ).all()
+
+        return render_template('daily_tasks.html', title='Daily Quests', today_tasks=today_tasks)
+
+    @app.route('/submit_proof/<int:user_task_id>', methods=['POST'])
+    @login_required
+    def submit_proof(user_task_id):
+        user_task = UserTask.query.get_or_404(user_task_id)
+
+        # Security: Ensure they don't upload proof for someone else's task
+        if user_task.user_id != current_user.id:
+            flash('Unauthorized action.', 'danger')
+            return redirect(url_for('daily_tasks'))
+
+        # Check if an image was uploaded
+        if 'proof_image' in request.files:
+            file = request.files['proof_image']
+            if file.filename != '':
+                # Re-using your exact same profile photo saver!
+                picture_file = save_picture(file) 
+                user_task.proof_image = picture_file
+
+        # Update status based on task requirements
+        user_task.status = 'Pending Review' if user_task.task.proof_required else 'Completed'
+        db.session.commit()
+
+        # --- Check if they finished all 3 tasks today ---
+        today = date.today()
+        all_today = UserTask.query.filter(
+            UserTask.user_id == current_user.id,
+            db.func.date(UserTask.date_accepted) == today
+        ).all()
+
+        # If every task today is done or waiting for review, give them points!
+        if all(ut.status in ['Completed', 'Pending Review'] for ut in all_today):
+            current_user.points += 50
+            current_user.streak += 1
+            db.session.commit()
+            flash('🎉 All daily tasks finished! +50 Points and your streak continues!', 'success')
+        else:
+            flash('Task submitted! Keep going to finish your daily 3.', 'info')
+
+        return redirect(url_for('daily_tasks'))
 
     return app
 

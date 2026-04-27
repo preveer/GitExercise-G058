@@ -12,8 +12,7 @@ user_badges = db.Table('user_badges',
 )
 
 class User(UserMixin, db.Model):
-    id = db.Column(# ... keep your existing fields ...
-        db.Integer, primary_key=True)
+    id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(100), nullable=False)
     email = db.Column(db.String(120), unique=True, nullable=False)
     password = db.Column(db.String(200), nullable=False)
@@ -24,8 +23,9 @@ class User(UserMixin, db.Model):
     is_admin = db.Column(db.Boolean, default=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     
-    # NEW: Tracks the student's total score for the leaderboard
+    # --- UPDATED: DAILY TASK TRACKING ---
     points = db.Column(db.Integer, default=0)
+    streak = db.Column(db.Integer, default=0)
     
     badges = db.relationship('Badge', secondary=user_badges, backref=db.backref('users', lazy='dynamic'))
 
@@ -35,7 +35,7 @@ class Badge(db.Model):
     description = db.Column(db.String(250))
     image_file = db.Column(db.String(100), nullable=False, default='default_badge.png')
 
-# --- PREVEER'S TASK TABLE ---
+# --- PREVEER'S TASK POOL TABLE ---
 class Task(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     title = db.Column(db.String(200), nullable=False)
@@ -59,10 +59,19 @@ class RSVP(db.Model):
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     event_id = db.Column(db.Integer, db.ForeignKey('event.id'), nullable=False)
     waitlisted = db.Column(db.Boolean, default=False)
-    
-    # NEW: Tracks if the student has checked in to earn points/badges
-    checked_in = db.Column(db.Boolean, default=False)
 
 @login_manager.user_loader
 def load_user(user_id):
     return User.query.get(int(user_id))
+
+# --- PREVEER'S USER PARTICIPATION TABLE ---
+class UserTask(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    task_id = db.Column(db.Integer, db.ForeignKey('task.id'), nullable=False)
+    status = db.Column(db.String(20), default='In Progress') # In Progress, Pending Review, Completed
+    proof_image = db.Column(db.String(100), nullable=True)
+    date_accepted = db.Column(db.DateTime, default=db.func.current_timestamp())
+
+    user = db.relationship('User', backref=db.backref('user_tasks', lazy=True))
+    task = db.relationship('Task', backref=db.backref('assigned_users', lazy=True))
