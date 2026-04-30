@@ -4,15 +4,16 @@ import random
 from datetime import date, datetime
 from flask import Flask, render_template, url_for, flash, redirect, request
 from flask_login import login_user, current_user, logout_user, login_required
-from models import db, login_manager, User, Badge, Event, RSVP, Task, UserTask, Point, Streak
-from forms import (RegistrationForm, LoginForm, EventForm, 
+# Added Submission to the imports below
+from models import db, login_manager, User, Badge, Event, RSVP, Task, UserTask, Point, Streak, Submission
+from forms import (RegistrationForm, LoginForm, EventForm,
                    ChangePasswordForm, UpdateProfileForm, TaskForm)
 from config import Config
 
 def create_app():
     app = Flask(__name__)
     app.config.from_object(Config)
-    
+   
     db.init_app(app)
     login_manager.init_app(app)
     login_manager.login_view = 'login'
@@ -21,7 +22,7 @@ def create_app():
         db.create_all()
 
     # --- HELPER FUNCTIONS ---
-    
+   
     def save_picture(form_picture):
         random_hex = secrets.token_hex(8)
         _, f_ext = os.path.splitext(form_picture.filename)
@@ -31,10 +32,9 @@ def create_app():
         return picture_fn
 
     def award_points(user_id, amount, source):
-        """Logs point transactions in the database."""
+        """Logs point transactions in the database[cite: 1]."""
         new_point = Point(user_id=user_id, amount=amount, source=source)
         db.session.add(new_point)
-        # We don't commit here so the calling route can handle the final commit
 
     # --- ROUTES ---
 
@@ -85,12 +85,14 @@ def create_app():
         flash('You have been logged out.', 'info')
         return redirect(url_for('login'))
 
-    # --- LUTHRA'S PROFILE ROUTES ---
+    # --- PROFILE ROUTES ---
 
     @app.route('/profile')
     @login_required
     def profile():
-        return render_template('profile.html', title='My Profile', user=current_user)
+        # UPDATED: Fetching point history for the table in profile.html
+        point_history = Point.query.filter_by(user_id=current_user.id).order_by(Point.awarded_at.desc()).all()
+        return render_template('profile.html', title='My Profile', user=current_user, point_history=point_history)
 
     @app.route('/profile/edit', methods=['GET', 'POST'])
     @login_required
@@ -114,21 +116,7 @@ def create_app():
             form.sport_preferences.data = current_user.sport_preferences
         return render_template('edit_profile.html', title='Edit Profile', form=form)
 
-    @app.route('/change_password', methods=['GET', 'POST'])
-    @login_required
-    def change_password():
-        form = ChangePasswordForm()
-        if form.validate_on_submit():
-            if current_user.password == form.old_password.data:
-                current_user.password = form.new_password.data
-                db.session.commit()
-                flash('Your password has been updated!', 'success')
-                return redirect(url_for('home'))
-            else:
-                flash('Update Failed. Current password is incorrect.', 'danger')
-        return render_template('change_password.html', title='Change Password', form=form)
-
-    # --- AAHTITIYA'S EVENT ROUTES ---
+    # --- EVENT ROUTES ---
 
     @app.route('/admin/events', methods=['GET', 'POST'])
     @login_required
@@ -161,22 +149,6 @@ def create_app():
             spots_left[event.id] = event.max_capacity - confirmed_count
         return render_template('events.html', events=events, user_rsvps=user_rsvps, spots_left=spots_left)
 
-    @app.route('/rsvp/<int:event_id>', methods=['POST'])
-    @login_required
-    def rsvp(event_id):
-        event = Event.query.get_or_404(event_id)
-        existing_rsvp = RSVP.query.filter_by(user_id=current_user.id, event_id=event.id).first()
-        if existing_rsvp:
-            flash('Already RSVP\'d!', 'info')
-            return redirect(url_for('list_events'))
-        count = RSVP.query.filter_by(event_id=event.id, waitlisted=False).count()
-        new_rsvp = RSVP(user_id=current_user.id, event_id=event.id, 
-                        waitlisted=(count >= event.max_capacity))
-        db.session.add(new_rsvp)
-        db.session.commit()
-        flash('RSVP Successful!', 'success')
-        return redirect(url_for('list_events'))
-
     @app.route('/checkin/<int:event_id>', methods=['POST'])
     @login_required
     def checkin(event_id):
@@ -184,9 +156,9 @@ def create_app():
         if rsvp and not rsvp.waitlisted and not rsvp.checked_in:
             rsvp.checked_in = True
             
-            # AWARD POINTS VIA LOG SYSTEM
+            # AWARD POINTS VIA LOG SYSTEM[cite: 1]
             award_points(current_user.id, 50, f"Event Attendance: {event_id}")
-            current_user.points += 50 
+            current_user.points += 50
             
             # Award Badge
             event_badge = Badge.query.filter_by(title="Event Attended").first()
@@ -203,31 +175,7 @@ def create_app():
             flash('Check-in failed. You must have a confirmed spot.', 'danger')
         return redirect(url_for('list_events'))
 
-    # --- PREVEER'S TASK & POINTS ROUTES ---
-
-    @app.route('/daily_tasks')
-    @login_required
-    def daily_tasks():
-        today = date.today()
-        today_tasks = UserTask.query.filter(
-            UserTask.user_id == current_user.id,
-            db.func.date(UserTask.date_accepted) == today
-        ).all()
-
-        if len(today_tasks) == 0:
-            pool = Task.query.all()
-            if len(pool) > 0:
-                chosen_tasks = random.sample(pool, min(3, len(pool)))
-                for t in chosen_tasks:
-                    new_ut = UserTask(user_id=current_user.id, task_id=t.id, status='In Progress')
-                    db.session.add(new_ut)
-                db.session.commit()
-                today_tasks = UserTask.query.filter(
-                    UserTask.user_id == current_user.id,
-                    db.func.date(UserTask.date_accepted) == today
-                ).all()
-
-        return render_template('daily_tasks.html', title='Daily Quests', today_tasks=today_tasks)
+    # --- TASK & POINTS ROUTES ---
 
     @app.route('/submit_proof/<int:user_task_id>', methods=['POST'])
     @login_required
@@ -245,7 +193,7 @@ def create_app():
                 user_task.status = 'Pending Review' if user_task.task.proof_required else 'Completed'
                 db.session.commit()
 
-                # Check if they finished all 3 tasks today
+                # Check if they finished all tasks today
                 today = date.today()
                 all_today = UserTask.query.filter(
                     UserTask.user_id == current_user.id,
@@ -256,10 +204,10 @@ def create_app():
                     base_points = 50
                     source_label = "Daily Tasks"
                     
-                    # STREAK MULTIPLIER LOGIC
+                    # STREAK MULTIPLIER LOGIC[cite: 2]
                     user_streak = Streak.query.filter_by(user_id=current_user.id).first()
                     if user_streak and user_streak.current_streak >= 7:
-                        base_points = int(base_points * 1.5) # 50% Bonus
+                        base_points = int(base_points * 1.5) 
                         source_label = "Daily Tasks (7-Day Streak Bonus)"
                     
                     award_points(current_user.id, base_points, source_label)
@@ -267,9 +215,27 @@ def create_app():
                     current_user.streak += 1
                     db.session.commit()
                     flash(f'All daily tasks finished! +{base_points} Points logged!', 'success')
-                else:
-                    flash('Task submitted! Keep going.', 'info')
         return redirect(url_for('daily_tasks'))
+
+    # --- NEW: ADMIN CHALLENGE VERIFICATION ---
+    @app.route('/admin/verify_challenge/<int:submission_id>/<int:rank>', methods=['POST'])
+    @login_required
+    def verify_challenge(submission_id, rank):
+        if not current_user.is_admin:
+            flash('Access denied.', 'danger')
+            return redirect(url_for('home'))
+            
+        submission = Submission.query.get_or_404(submission_id)
+        points_map = {1: 150, 2: 100, 3: 50}
+        reward = points_map.get(rank, 0)
+        
+        if not submission.verified:
+            submission.verified = True
+            award_points(submission.user_id, reward, f"Challenge Rank {rank} Bonus")
+            submission.user.points += reward
+            db.session.commit()
+            flash(f'Verified! {reward} points awarded.', 'success')
+        return redirect(url_for('home'))
 
     return app
 
