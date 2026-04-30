@@ -1,17 +1,18 @@
 import os
 import secrets
+import random
+from datetime import date, datetime
 from flask import Flask, render_template, url_for, flash, redirect, request
 from flask_login import login_user, current_user, logout_user, login_required
-from models import Task, db, login_manager, User, Badge, Event, RSVP, UserTask
-from forms import RegistrationForm, LoginForm, EventForm, ChangePasswordForm, UpdateProfileForm, TaskForm 
+from models import db, login_manager, User, Badge, Event, RSVP, Task, UserTask, Point, Streak
+from forms import (RegistrationForm, LoginForm, EventForm, 
+                   ChangePasswordForm, UpdateProfileForm, TaskForm)
 from config import Config
-import random
-from datetime import date
 
 def create_app():
     app = Flask(__name__)
     app.config.from_object(Config)
-
+    
     db.init_app(app)
     login_manager.init_app(app)
     login_manager.login_view = 'login'
@@ -19,7 +20,8 @@ def create_app():
     with app.app_context():
         db.create_all()
 
-    # --- HELPER FUNCTION FOR PROFILE PHOTOS ---
+    # --- HELPER FUNCTIONS ---
+    
     def save_picture(form_picture):
         random_hex = secrets.token_hex(8)
         _, f_ext = os.path.splitext(form_picture.filename)
@@ -27,6 +29,14 @@ def create_app():
         picture_path = os.path.join(app.root_path, 'static/profile_pics', picture_fn)
         form_picture.save(picture_path)
         return picture_fn
+
+    def award_points(user_id, amount, source):
+        """Logs point transactions in the database."""
+        new_point = Point(user_id=user_id, amount=amount, source=source)
+        db.session.add(new_point)
+        # We don't commit here so the calling route can handle the final commit
+
+    # --- ROUTES ---
 
     @app.route('/')
     def home():
@@ -76,6 +86,7 @@ def create_app():
         return redirect(url_for('login'))
 
     # --- LUTHRA'S PROFILE ROUTES ---
+
     @app.route('/profile')
     @login_required
     def profile():
@@ -89,7 +100,6 @@ def create_app():
             if form.profile_photo.data:
                 picture_file = save_picture(form.profile_photo.data)
                 current_user.profile_photo = picture_file
-            
             current_user.name = form.name.data
             current_user.faculty = form.faculty.data
             current_user.year = form.year.data
@@ -97,13 +107,11 @@ def create_app():
             db.session.commit()
             flash('Your profile has been updated!', 'success')
             return redirect(url_for('profile'))
-        
         elif request.method == 'GET':
             form.name.data = current_user.name
             form.faculty.data = current_user.faculty
             form.year.data = current_user.year
             form.sport_preferences.data = current_user.sport_preferences
-            
         return render_template('edit_profile.html', title='Edit Profile', form=form)
 
     @app.route('/change_password', methods=['GET', 'POST'])
@@ -121,9 +129,13 @@ def create_app():
         return render_template('change_password.html', title='Change Password', form=form)
 
     # --- AAHTITIYA'S EVENT ROUTES ---
+
     @app.route('/admin/events', methods=['GET', 'POST'])
     @login_required
     def manage_events():
+        if not current_user.is_admin:
+            flash('Access denied.', 'danger')
+            return redirect(url_for('home'))
         form = EventForm()
         if form.validate_on_submit():
             new_event = Event(
@@ -142,14 +154,11 @@ def create_app():
     @login_required
     def list_events():
         events = Event.query.all()
-        # Create a dictionary of the user's RSVPs for easy checking in HTML
         user_rsvps = {rsvp.event_id: rsvp for rsvp in RSVP.query.filter_by(user_id=current_user.id).all()}
-        
         spots_left = {}
         for event in events:
             confirmed_count = RSVP.query.filter_by(event_id=event.id, waitlisted=False).count()
             spots_left[event.id] = event.max_capacity - confirmed_count
-            
         return render_template('events.html', events=events, user_rsvps=user_rsvps, spots_left=spots_left)
 
     @app.route('/rsvp/<int:event_id>', methods=['POST'])
@@ -161,139 +170,58 @@ def create_app():
             flash('Already RSVP\'d!', 'info')
             return redirect(url_for('list_events'))
         count = RSVP.query.filter_by(event_id=event.id, waitlisted=False).count()
-        new_rsvp = RSVP(user_id=current_user.id, event_id=event.id, waitlisted=(count >= event.max_capacity))
+        new_rsvp = RSVP(user_id=current_user.id, event_id=event.id, 
+                        waitlisted=(count >= event.max_capacity))
         db.session.add(new_rsvp)
         db.session.commit()
         flash('RSVP Successful!', 'success')
         return redirect(url_for('list_events'))
-        
-    @app.route('/cancel_rsvp/<int:event_id>', methods=['POST'])
-    @login_required
-    def cancel_rsvp(event_id):
-        rsvp = RSVP.query.filter_by(user_id=current_user.id, event_id=event_id).first()
-        if not rsvp:
-            flash('You are not RSVP\'d.', 'danger')
-            return redirect(url_for('list_events'))
-        was_confirmed = not rsvp.waitlisted
-        db.session.delete(rsvp)
-        if was_confirmed:
-            next_in_line = RSVP.query.filter_by(event_id=event_id, waitlisted=True).order_by(RSVP.id).first()
-            if next_in_line:
-                next_in_line.waitlisted = False 
-        db.session.commit()
-        flash('RSVP successfully cancelled.', 'success')
-        return redirect(url_for('list_events'))
 
-    # NEW: Check-in logic to award points and badge
     @app.route('/checkin/<int:event_id>', methods=['POST'])
     @login_required
     def checkin(event_id):
         rsvp = RSVP.query.filter_by(user_id=current_user.id, event_id=event_id).first()
         if rsvp and not rsvp.waitlisted and not rsvp.checked_in:
             rsvp.checked_in = True
-            current_user.points += 50 # Bonus points!
+            
+            # AWARD POINTS VIA LOG SYSTEM
+            award_points(current_user.id, 50, f"Event Attendance: {event_id}")
+            current_user.points += 50 
             
             # Award Badge
             event_badge = Badge.query.filter_by(title="Event Attended").first()
             if not event_badge:
                 event_badge = Badge(title="Event Attended", description="Attended a campus sporting event!")
                 db.session.add(event_badge)
+            
             if event_badge not in current_user.badges:
                 current_user.badges.append(event_badge)
-                
+            
             db.session.commit()
             flash('Checked in! +50 Points and Badge earned!', 'success')
         else:
             flash('Check-in failed. You must have a confirmed spot.', 'danger')
         return redirect(url_for('list_events'))
-    
-    # --- PREVEER'S TASK POOL ROUTES ---
-    @app.route('/tasks')
-    @login_required
-    def student_tasks():
-        tasks = Task.query.all()
-        return render_template('student_tasks.html', title='Task Pool', tasks=tasks)
 
-    @app.route('/admin/tasks')
-    @login_required
-    def admin_tasks():
-        if not current_user.is_admin:
-            flash('Access denied.', 'danger')
-            return redirect(url_for('home'))
-        tasks = Task.query.all()
-        return render_template('admin_tasks.html', title='Task Management', tasks=tasks)
+    # --- PREVEER'S TASK & POINTS ROUTES ---
 
-    @app.route('/admin/tasks/add', methods=['GET', 'POST'])
-    @login_required
-    def add_task():
-        if not current_user.is_admin:
-            return redirect(url_for('home'))
-        form = TaskForm()
-        if form.validate_on_submit():
-            new_task = Task(title=form.title.data, description=form.description.data,
-                           sport_category=form.sport_category.data, difficulty=form.difficulty.data,
-                           proof_required=form.proof_required.data)
-            db.session.add(new_task)
-            db.session.commit()
-            flash('New task added!', 'success')
-            return redirect(url_for('admin_tasks'))
-        return render_template('admin_task_form.html', form=form, legend='Add New Task')
-
-    @app.route('/admin/tasks/edit/<int:task_id>', methods=['GET', 'POST'])
-    @login_required
-    def edit_task(task_id):
-        task = Task.query.get_or_404(task_id)
-        form = TaskForm()
-        if form.validate_on_submit():
-            task.title, task.description = form.title.data, form.description.data
-            db.session.commit()
-            return redirect(url_for('admin_tasks'))
-        elif request.method == 'GET':
-            form.title.data, form.description.data = task.title, task.description
-        return render_template('admin_task_form.html', form=form, legend='Edit Task')
-
-    @app.route('/admin/tasks/delete/<int:task_id>', methods=['POST'])
-    @login_required
-    def delete_task(task_id):
-        task = Task.query.get_or_404(task_id)
-        db.session.delete(task)
-        db.session.commit()
-        return redirect(url_for('admin_tasks'))
-    
     @app.route('/daily_tasks')
     @login_required
     def daily_tasks():
         today = date.today()
-
-        # 1. Check if the user already has tasks assigned for TODAY
         today_tasks = UserTask.query.filter(
             UserTask.user_id == current_user.id,
             db.func.date(UserTask.date_accepted) == today
         ).all()
 
-        # 2. If they have NO tasks for today, generate 3 random ones!
         if len(today_tasks) == 0:
-            # Try to match their sport preference first
-            if current_user.sport_preferences:
-                pool = Task.query.filter(Task.sport_category.ilike(f"%{current_user.sport_preferences}%")).all()
-            else:
-                pool = Task.query.all()
-
-            # If the specific pool is too small, just use all available tasks
-            if len(pool) < 3:
-                pool = Task.query.all()
-
-            # Pick up to 3 random tasks
+            pool = Task.query.all()
             if len(pool) > 0:
                 chosen_tasks = random.sample(pool, min(3, len(pool)))
-                
-                # Assign them to the user
                 for t in chosen_tasks:
                     new_ut = UserTask(user_id=current_user.id, task_id=t.id, status='In Progress')
                     db.session.add(new_ut)
                 db.session.commit()
-
-                # Refresh the list to show them on the page
                 today_tasks = UserTask.query.filter(
                     UserTask.user_id == current_user.id,
                     db.func.date(UserTask.date_accepted) == today
@@ -305,40 +233,42 @@ def create_app():
     @login_required
     def submit_proof(user_task_id):
         user_task = UserTask.query.get_or_404(user_task_id)
-
-        # Security: Ensure they don't upload proof for someone else's task
         if user_task.user_id != current_user.id:
             flash('Unauthorized action.', 'danger')
             return redirect(url_for('daily_tasks'))
 
-        # Check if an image was uploaded
         if 'proof_image' in request.files:
             file = request.files['proof_image']
             if file.filename != '':
-                # Re-using your exact same profile photo saver!
-                picture_file = save_picture(file) 
+                picture_file = save_picture(file)
                 user_task.proof_image = picture_file
+                user_task.status = 'Pending Review' if user_task.task.proof_required else 'Completed'
+                db.session.commit()
 
-        # Update status based on task requirements
-        user_task.status = 'Pending Review' if user_task.task.proof_required else 'Completed'
-        db.session.commit()
+                # Check if they finished all 3 tasks today
+                today = date.today()
+                all_today = UserTask.query.filter(
+                    UserTask.user_id == current_user.id,
+                    db.func.date(UserTask.date_accepted) == today
+                ).all()
 
-        # --- Check if they finished all 3 tasks today ---
-        today = date.today()
-        all_today = UserTask.query.filter(
-            UserTask.user_id == current_user.id,
-            db.func.date(UserTask.date_accepted) == today
-        ).all()
-
-        # If every task today is done or waiting for review, give them points!
-        if all(ut.status in ['Completed', 'Pending Review'] for ut in all_today):
-            current_user.points += 50
-            current_user.streak += 1
-            db.session.commit()
-            flash('🎉 All daily tasks finished! +50 Points and your streak continues!', 'success')
-        else:
-            flash('Task submitted! Keep going to finish your daily 3.', 'info')
-
+                if all(ut.status in ['Completed', 'Pending Review'] for ut in all_today):
+                    base_points = 50
+                    source_label = "Daily Tasks"
+                    
+                    # STREAK MULTIPLIER LOGIC
+                    user_streak = Streak.query.filter_by(user_id=current_user.id).first()
+                    if user_streak and user_streak.current_streak >= 7:
+                        base_points = int(base_points * 1.5) # 50% Bonus
+                        source_label = "Daily Tasks (7-Day Streak Bonus)"
+                    
+                    award_points(current_user.id, base_points, source_label)
+                    current_user.points += base_points
+                    current_user.streak += 1
+                    db.session.commit()
+                    flash(f'All daily tasks finished! +{base_points} Points logged!', 'success')
+                else:
+                    flash('Task submitted! Keep going.', 'info')
         return redirect(url_for('daily_tasks'))
 
     return app

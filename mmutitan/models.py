@@ -75,3 +75,17 @@ class UserTask(db.Model):
 
     user = db.relationship('User', backref=db.backref('user_tasks', lazy=True))
     task = db.relationship('Task', backref=db.backref('assigned_users', lazy=True))
+
+class Point(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    amount = db.Column(db.Integer, nullable=False)
+    source = db.Column(db.String(100), nullable=False) # e.g., 'Daily Tasks', 'Streak Bonus', 'Event'
+    awarded_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+class Streak(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    current_streak = db.Column(db.Integer, default=0)
+    longest_streak = db.Column(db.Integer, default=0)
+    last_completed = db.Column(db.Date)
