@@ -2,8 +2,10 @@ import os
 import secrets
 from flask import Flask, render_template, url_for, flash, redirect, request
 from flask_login import login_user, current_user, logout_user, login_required
-from models import Task, db, login_manager, User, Badge, Event, RSVP, UserTask
-from forms import RegistrationForm, LoginForm, EventForm, ChangePasswordForm, UpdateProfileForm, TaskForm 
+# Added Challenge and Submission here!
+from models import Task, db, login_manager, User, Badge, Event, RSVP, UserTask, Challenge, Submission
+# Added ChallengeForm here!
+from forms import RegistrationForm, LoginForm, EventForm, ChangePasswordForm, UpdateProfileForm, TaskForm, ChallengeForm 
 from config import Config
 import random
 from datetime import date
@@ -142,7 +144,6 @@ def create_app():
     @login_required
     def list_events():
         events = Event.query.all()
-        # Create a dictionary of the user's RSVPs for easy checking in HTML
         user_rsvps = {rsvp.event_id: rsvp for rsvp in RSVP.query.filter_by(user_id=current_user.id).all()}
         
         spots_left = {}
@@ -184,16 +185,14 @@ def create_app():
         flash('RSVP successfully cancelled.', 'success')
         return redirect(url_for('list_events'))
 
-    # NEW: Check-in logic to award points and badge
     @app.route('/checkin/<int:event_id>', methods=['POST'])
     @login_required
     def checkin(event_id):
         rsvp = RSVP.query.filter_by(user_id=current_user.id, event_id=event_id).first()
         if rsvp and not rsvp.waitlisted and not rsvp.checked_in:
             rsvp.checked_in = True
-            current_user.points += 50 # Bonus points!
+            current_user.points += 50 
             
-            # Award Badge
             event_badge = Badge.query.filter_by(title="Event Attended").first()
             if not event_badge:
                 event_badge = Badge(title="Event Attended", description="Attended a campus sporting event!")
@@ -264,36 +263,24 @@ def create_app():
     @login_required
     def daily_tasks():
         today = date.today()
-
-        # 1. Check if the user already has tasks assigned for TODAY
         today_tasks = UserTask.query.filter(
             UserTask.user_id == current_user.id,
             db.func.date(UserTask.date_accepted) == today
         ).all()
 
-        # 2. If they have NO tasks for today, generate 3 random ones!
         if len(today_tasks) == 0:
-            # Try to match their sport preference first
             if current_user.sport_preferences:
                 pool = Task.query.filter(Task.sport_category.ilike(f"%{current_user.sport_preferences}%")).all()
             else:
                 pool = Task.query.all()
-
-            # If the specific pool is too small, just use all available tasks
             if len(pool) < 3:
                 pool = Task.query.all()
-
-            # Pick up to 3 random tasks
             if len(pool) > 0:
                 chosen_tasks = random.sample(pool, min(3, len(pool)))
-                
-                # Assign them to the user
                 for t in chosen_tasks:
                     new_ut = UserTask(user_id=current_user.id, task_id=t.id, status='In Progress')
                     db.session.add(new_ut)
                 db.session.commit()
-
-                # Refresh the list to show them on the page
                 today_tasks = UserTask.query.filter(
                     UserTask.user_id == current_user.id,
                     db.func.date(UserTask.date_accepted) == today
@@ -305,32 +292,22 @@ def create_app():
     @login_required
     def submit_proof(user_task_id):
         user_task = UserTask.query.get_or_404(user_task_id)
-
-        # Security: Ensure they don't upload proof for someone else's task
         if user_task.user_id != current_user.id:
             flash('Unauthorized action.', 'danger')
             return redirect(url_for('daily_tasks'))
-
-        # Check if an image was uploaded
         if 'proof_image' in request.files:
             file = request.files['proof_image']
             if file.filename != '':
-                # Re-using your exact same profile photo saver!
                 picture_file = save_picture(file) 
                 user_task.proof_image = picture_file
-
-        # Update status based on task requirements
         user_task.status = 'Pending Review' if user_task.task.proof_required else 'Completed'
         db.session.commit()
-
-        # --- Check if they finished all 3 tasks today ---
+        
         today = date.today()
         all_today = UserTask.query.filter(
             UserTask.user_id == current_user.id,
             db.func.date(UserTask.date_accepted) == today
         ).all()
-
-        # If every task today is done or waiting for review, give them points!
         if all(ut.status in ['Completed', 'Pending Review'] for ut in all_today):
             current_user.points += 50
             current_user.streak += 1
@@ -338,8 +315,104 @@ def create_app():
             flash('🎉 All daily tasks finished! +50 Points and your streak continues!', 'success')
         else:
             flash('Task submitted! Keep going to finish your daily 3.', 'info')
-
         return redirect(url_for('daily_tasks'))
+
+    # --- AAHTITIYA'S WEEKLY CHALLENGE ADMIN ROUTES (WEEK 6) ---
+    
+    @app.route('/admin/challenges')
+    @login_required
+    def admin_challenges():
+        if not current_user.is_admin:
+            flash('Access denied.', 'danger')
+            return redirect(url_for('home'))
+        challenges = Challenge.query.all()
+        return render_template('admin_challenges.html', title='Manage Challenges', challenges=challenges)
+
+    @app.route('/admin/challenges/add', methods=['GET', 'POST'])
+    @login_required
+    def add_challenge():
+        if not current_user.is_admin:
+            return redirect(url_for('home'))
+        form = ChallengeForm()
+        if form.validate_on_submit():
+            new_challenge = Challenge(
+                title=form.title.data,
+                description=form.description.data,
+                sport_category=form.sport_category.data,
+                deadline=form.deadline.data,
+                scoring_criteria=form.scoring_criteria.data
+            )
+            db.session.add(new_challenge)
+            db.session.commit()
+            flash('New weekly challenge created!', 'success')
+            return redirect(url_for('admin_challenges'))
+        return render_template('admin_challenge_form.html', title='Add Challenge', form=form, legend='Create New Challenge')
+
+    @app.route('/admin/challenges/edit/<int:challenge_id>', methods=['GET', 'POST'])
+    @login_required
+    def edit_challenge(challenge_id):
+        if not current_user.is_admin:
+            return redirect(url_for('home'))
+        challenge = Challenge.query.get_or_404(challenge_id)
+        form = ChallengeForm()
+        if form.validate_on_submit():
+            challenge.title = form.title.data
+            challenge.description = form.description.data
+            challenge.sport_category = form.sport_category.data
+            challenge.deadline = form.deadline.data
+            challenge.scoring_criteria = form.scoring_criteria.data
+            db.session.commit()
+            flash('Challenge updated!', 'success')
+            return redirect(url_for('admin_challenges'))
+        elif request.method == 'GET':
+            form.title.data = challenge.title
+            form.description.data = challenge.description
+            form.sport_category.data = challenge.sport_category
+            form.deadline.data = challenge.deadline
+            form.scoring_criteria.data = challenge.scoring_criteria
+        return render_template('admin_challenge_form.html', title='Edit Challenge', form=form, legend='Edit Challenge')
+
+    @app.route('/admin/challenges/delete/<int:challenge_id>', methods=['POST'])
+    @login_required
+    def delete_challenge(challenge_id):
+        if not current_user.is_admin:
+            return redirect(url_for('home'))
+        challenge = Challenge.query.get_or_404(challenge_id)
+        db.session.delete(challenge)
+        db.session.commit()
+        flash('Challenge deleted.', 'info')
+        return redirect(url_for('admin_challenges'))
+
+    @app.route('/admin/challenges/<int:challenge_id>/submissions')
+    @login_required
+    def view_submissions(challenge_id):
+        if not current_user.is_admin:
+            return redirect(url_for('home'))
+        challenge = Challenge.query.get_or_404(challenge_id)
+        submissions = Submission.query.filter_by(challenge_id=challenge.id).all()
+        return render_template('admin_submissions.html', title='View Submissions', challenge=challenge, submissions=submissions)
+
+    @app.route('/admin/submissions/<int:submission_id>/verify', methods=['POST'])
+    @login_required
+    def verify_submission(submission_id):
+        if not current_user.is_admin:
+            return redirect(url_for('home'))
+        submission = Submission.query.get_or_404(submission_id)
+        submission.verified = True
+        db.session.commit()
+        flash('Submission verified successfully!', 'success')
+        return redirect(url_for('view_submissions', challenge_id=submission.challenge_id))
+
+    @app.route('/admin/challenges/<int:challenge_id>/close', methods=['POST'])
+    @login_required
+    def close_challenge(challenge_id):
+        if not current_user.is_admin:
+            return redirect(url_for('home'))
+        challenge = Challenge.query.get_or_404(challenge_id)
+        challenge.is_closed = True
+        db.session.commit()
+        flash('Challenge is now closed for new submissions!', 'info')
+        return redirect(url_for('admin_challenges'))
 
     return app
 
