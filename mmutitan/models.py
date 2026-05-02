@@ -21,13 +21,18 @@ class User(UserMixin, db.Model):
     sport_preferences = db.Column(db.String(200))
     profile_photo = db.Column(db.String(200), default='default.jpg')
     is_admin = db.Column(db.Boolean, default=False)
+    is_banned = db.Column(db.Boolean, default=False) # LUTHRA'S NEW BAN FEATURE
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     
-    # --- UPDATED: DAILY TASK TRACKING ---
+    # DAILY TASK TRACKING
     points = db.Column(db.Integer, default=0)
     streak = db.Column(db.Integer, default=0)
     
+    # Cascade deletions so deleting a user doesn't crash the DB
     badges = db.relationship('Badge', secondary=user_badges, backref=db.backref('users', lazy='dynamic'))
+    tasks = db.relationship('UserTask', backref='user_ref', cascade="all, delete-orphan", lazy=True)
+    points_history = db.relationship('Point', backref='user_ref', cascade="all, delete-orphan", lazy=True)
+    rsvps = db.relationship('RSVP', backref='user_ref', cascade="all, delete-orphan", lazy=True)
 
 class Badge(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -35,7 +40,6 @@ class Badge(db.Model):
     description = db.Column(db.String(250))
     image_file = db.Column(db.String(100), nullable=False, default='default_badge.png')
 
-# --- PREVEER'S TASK POOL TABLE ---
 class Task(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     title = db.Column(db.String(200), nullable=False)
@@ -50,8 +54,8 @@ class Event(db.Model):
     name = db.Column(db.String(200), nullable=False)
     venue = db.Column(db.String(200))
     sport_type = db.Column(db.String(100))
-    date = db.Column(db.Date)  
-    time = db.Column(db.Time)  
+    date = db.Column(db.Date)
+    time = db.Column(db.Time)
     max_capacity = db.Column(db.Integer)
 
 class RSVP(db.Model):
@@ -59,28 +63,39 @@ class RSVP(db.Model):
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     event_id = db.Column(db.Integer, db.ForeignKey('event.id'), nullable=False)
     waitlisted = db.Column(db.Boolean, default=False)
+    checked_in = db.Column(db.Boolean, default=False)
+
+# NEW: MISSING CHALLENGE AND SUBMISSION MODELS FIXED
+class Challenge(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    title = db.Column(db.String(200), nullable=False)
+    description = db.Column(db.Text, nullable=False)
+
+class Submission(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    challenge_id = db.Column(db.Integer, db.ForeignKey('challenge.id'), nullable=False)
+    verified = db.Column(db.Boolean, default=False)
+    user = db.relationship('User', backref=db.backref('submissions', lazy=True))
 
 @login_manager.user_loader
 def load_user(user_id):
     return User.query.get(int(user_id))
 
-# --- PREVEER'S USER PARTICIPATION TABLE ---
 class UserTask(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     task_id = db.Column(db.Integer, db.ForeignKey('task.id'), nullable=False)
-    status = db.Column(db.String(20), default='In Progress') # In Progress, Pending Review, Completed
+    status = db.Column(db.String(20), default='In Progress')
     proof_image = db.Column(db.String(100), nullable=True)
     date_accepted = db.Column(db.DateTime, default=db.func.current_timestamp())
-
-    user = db.relationship('User', backref=db.backref('user_tasks', lazy=True))
     task = db.relationship('Task', backref=db.backref('assigned_users', lazy=True))
 
 class Point(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     amount = db.Column(db.Integer, nullable=False)
-    source = db.Column(db.String(100), nullable=False) # e.g., 'Daily Tasks', 'Streak Bonus', 'Event'
+    source = db.Column(db.String(100), nullable=False)
     awarded_at = db.Column(db.DateTime, default=datetime.utcnow)
 
 class Streak(db.Model):
