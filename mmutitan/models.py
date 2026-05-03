@@ -76,6 +76,7 @@ class UserTask(db.Model):
     user = db.relationship('User', backref=db.backref('user_tasks', lazy=True))
     task = db.relationship('Task', backref=db.backref('assigned_users', lazy=True))
 
+<<<<<<< HEAD
 class Point(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
@@ -89,3 +90,29 @@ class Streak(db.Model):
     current_streak = db.Column(db.Integer, default=0)
     longest_streak = db.Column(db.Integer, default=0)
     last_completed = db.Column(db.Date)
+=======
+    # --- AAHTITIYA'S WEEKLY CHALLENGE TABLES (WEEK 6) ---
+
+class Challenge(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    title = db.Column(db.String(200), nullable=False)
+    description = db.Column(db.Text, nullable=False)
+    sport_category = db.Column(db.String(100), nullable=False)
+    deadline = db.Column(db.DateTime, nullable=False)
+    scoring_criteria = db.Column(db.String(200), nullable=False)
+    is_closed = db.Column(db.Boolean, default=False)
+    
+    submissions = db.relationship('Submission', backref='challenge', lazy=True, cascade="all, delete-orphan")
+
+class Submission(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    challenge_id = db.Column(db.Integer, db.ForeignKey('challenge.id'), nullable=False)
+    
+    result = db.Column(db.String(100), nullable=False)
+    proof_file = db.Column(db.String(200), nullable=False)
+    verified = db.Column(db.Boolean, default=False)
+    submitted_at = db.Column(db.DateTime, default=db.func.current_timestamp())
+    
+    user = db.relationship('User', backref=db.backref('submissions', lazy=True))
+>>>>>>> main
