@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container mt-5">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2>Submissions for: <span class="text-primary">{{ challenge.title }}</span></h2>
+            <p class="text-muted mb-0">Scoring: {{ challenge.scoring_criteria }}</p>
+        </div>
+        <a href="{{ url_for('admin_challenges') }}" class="btn btn-outline-secondary">Back to Challenges</a>
+    </div>
+
+    <div class="row">
+        {% if submissions %}
+            {% for sub in submissions %}
+            <div class="col-md-4 mb-4">
+                <div class="card h-100 shadow-sm border-{% if sub.verified %}success{% else %}warning{% endif %}">
+                    <!-- Display the student's uploaded proof image -->
+                    <img src="{{ url_for('static', filename='uploads/' + sub.proof_file) }}" class="card-img-top" alt="Proof Image" style="height: 200px; object-fit: cover;">
+                    
+                    <div class="card-body">
+                        <h5 class="card-title">{{ sub.user.name }}</h5>
+                        <p class="card-text mb-1"><strong>Result:</strong> {{ sub.result }}</p>
+                        <p class="card-text mb-3"><small class="text-muted">Submitted: {{ sub.submitted_at.strftime('%b %d, %I:%M %p') }}</small></p>
+                        
+                        {% if sub.verified %}
+                            <span class="badge bg-success w-100 py-2">Verified</span>
+                        {% else %}
+                            <form action="{{ url_for('verify_submission', submission_id=sub.id) }}" method="POST">
+                                <button type="submit" class="btn btn-warning w-100 fw-bold">Verify Submission</button>
+                            </form>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        {% else %}
+            <div class="col-12 text-center my-5">
+                <h4 class="text-muted">No submissions yet for this challenge!</h4>
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
