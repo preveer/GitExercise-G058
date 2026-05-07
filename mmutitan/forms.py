@@ -1,6 +1,6 @@
 from flask_wtf import FlaskForm
 from flask_wtf.file import FileField, FileAllowed
-from wtforms import StringField, PasswordField, SubmitField, IntegerField, SelectField, BooleanField, DateField, TimeField, TextAreaField
+from wtforms import StringField, PasswordField, SubmitField, IntegerField, SelectField, BooleanField, DateField, TimeField, TextAreaField, DateTimeLocalField
 from wtforms.validators import DataRequired, Length, Email, EqualTo, ValidationError
 from models import User
 
@@ -80,3 +80,23 @@ class TaskForm(FlaskForm):
     ], validators=[DataRequired()])
     proof_required = BooleanField('Proof Required?')
     submit = SubmitField('Save Task')
+
+# --- AAHTITIYA'S WEEKLY CHALLENGE FORMS (WEEK 6) ---
+class ChallengeForm(FlaskForm):
+    title = StringField('Challenge Title', validators=[DataRequired()])
+    description = TextAreaField('Description', validators=[DataRequired()])
+    sport_category = SelectField('Sport Category', 
+                                 choices=[('Running', 'Running'), 
+                                          ('Strength', 'Strength'), 
+                                          ('Flexibility', 'Flexibility'), 
+                                          ('Team Sports', 'Team Sports'), 
+                                          ('Other', 'Other')], 
+                                 validators=[DataRequired()])
+    deadline = DateTimeLocalField('Submission Deadline', format='%Y-%m-%dT%H:%M', validators=[DataRequired()])
+    scoring_criteria = StringField('Scoring Criteria (e.g., Fastest Time, Most Reps)', validators=[DataRequired()])
+    submit = SubmitField('Save Challenge')
+
+class SubmissionForm(FlaskForm):
+    result = StringField('Your Result (e.g., 25 mins, 50 reps)', validators=[DataRequired()])
+    proof_file = FileField('Upload Proof (Image)', validators=[DataRequired(), FileAllowed(['jpg', 'png', 'jpeg'], 'Images only please!')])
+    submit = SubmitField('Submit Proof')

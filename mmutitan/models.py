@@ -90,17 +90,3 @@ class UserTask(db.Model):
     proof_image = db.Column(db.String(100), nullable=True)
     date_accepted = db.Column(db.DateTime, default=db.func.current_timestamp())
     task = db.relationship('Task', backref=db.backref('assigned_users', lazy=True))
-
-class Point(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
-    amount = db.Column(db.Integer, nullable=False)
-    source = db.Column(db.String(100), nullable=False)
-    awarded_at = db.Column(db.DateTime, default=datetime.utcnow)
-
-class Streak(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
-    current_streak = db.Column(db.Integer, default=0)
-    longest_streak = db.Column(db.Integer, default=0)
-    last_completed = db.Column(db.Date)
