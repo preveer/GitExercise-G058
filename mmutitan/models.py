@@ -44,6 +44,7 @@ class Task(db.Model):
     difficulty = db.Column(db.String(50), nullable=False)
     proof_required = db.Column(db.Boolean, default=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
+user_tasks = db.relationship('UserTask', backref='task', cascade="all, delete-orphan", lazy=True)
 
 class Event(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -76,21 +77,6 @@ class UserTask(db.Model):
     user = db.relationship('User', backref=db.backref('user_tasks', lazy=True))
     task = db.relationship('Task', backref=db.backref('assigned_users', lazy=True))
 
-<<<<<<< HEAD
-class Point(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
-    amount = db.Column(db.Integer, nullable=False)
-    source = db.Column(db.String(100), nullable=False) # e.g., 'Daily Tasks', 'Streak Bonus', 'Event'
-    awarded_at = db.Column(db.DateTime, default=datetime.utcnow)
-
-class Streak(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
-    current_streak = db.Column(db.Integer, default=0)
-    longest_streak = db.Column(db.Integer, default=0)
-    last_completed = db.Column(db.Date)
-=======
     # --- AAHTITIYA'S WEEKLY CHALLENGE TABLES (WEEK 6) ---
 
 class Challenge(db.Model):
@@ -115,4 +101,3 @@ class Submission(db.Model):
     submitted_at = db.Column(db.DateTime, default=db.func.current_timestamp())
     
     user = db.relationship('User', backref=db.backref('submissions', lazy=True))
->>>>>>> main
