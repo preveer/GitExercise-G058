@@ -6,7 +6,7 @@ from models import Task, db, login_manager, User, Badge, Event, RSVP, UserTask
 from forms import RegistrationForm, LoginForm, EventForm, ChangePasswordForm, UpdateProfileForm, TaskForm 
 from config import Config
 import random
-from datetime import date
+from models import Task, db, login_manager, User, Badge, Event, RSVP, UserTask, Point
 
 def create_app():
     app = Flask(__name__)
