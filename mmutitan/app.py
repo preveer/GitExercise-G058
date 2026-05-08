@@ -418,7 +418,41 @@ def create_app():
             flash('Task submitted! Keep going to finish your daily 3.', 'info')
 
         return redirect(url_for('daily_tasks'))
+    @app.route('/leaderboard')
+    @login_required
+    def leaderboard():
+        # Get filter values from the URL (if any)
+        faculty_filter = request.args.get('faculty', '')
+        sport_filter = request.args.get('sport', '')
 
+        # Start with a base query for all non-admin users
+        query = User.query.filter_by(is_admin=False)
+
+        # Apply filters if they are selected
+        if faculty_filter:
+            query = query.filter(User.faculty == faculty_filter)
+        if sport_filter:
+            query = query.filter(User.sport_preferences.ilike(f"%{sport_filter}%"))
+
+        # Fetch data for both boards
+        # Points Board: Ranked by points (highest to lowest)
+        points_leaderboard = query.order_by(User.points.desc()).all()
+        
+        # Streak Board: Ranked by streak (highest to lowest)
+        streak_leaderboard = query.order_by(User.streak.desc()).all()
+
+        # Get unique faculties and sports for the filter dropdowns
+        all_faculties = db.session.query(User.faculty).distinct().all()
+        all_sports = ["Football", "Badminton", "Basketball", "Tennis", "Swimming"] # Common MMU sports
+
+        return render_template('leaderboard.html', 
+                               title='Leaderboard',
+                               points_users=points_leaderboard,
+                               streak_users=streak_leaderboard,
+                               faculties=[f[0] for f in all_faculties if f[0]],
+                               sports=all_sports,
+                               selected_faculty=faculty_filter,
+                               selected_sport=sport_filter)
     return app
 
 if __name__ == '__main__':
