@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container mt-4">
+    <h2>{{ title }}</h2>
+    <hr>
+    <div class="row">
+        {% if badges %}
+            {% for badge in badges %}
+                <div class="col-md-4 mb-4">
+                    <div class="card h-100 text-center shadow-sm">
+                        <div class="card-body">
+                            <h5 class="card-title text-primary">{{ badge.title }}</h5>
+                            <p class="card-text">{{ badge.description }}</p>
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+        {% else: %}
+            <div class="col-12">
+                <div class="alert alert-info">
+                    You haven't earned any badges yet. Start participating in events and tasks to earn them!
+                </div>
+            </div>
+        {% endif %}
+    </div>
+    <div class="mt-3">
+        <a href="{{ url_for('profile') }}" class="btn btn-secondary">Back to Profile</a>
+    </div>
+</div>
+{% endblock %}

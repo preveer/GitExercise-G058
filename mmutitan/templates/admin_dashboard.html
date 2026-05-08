@@ -1,0 +1,83 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container mt-4">
+    <h2 class="fw-bold mb-4">Admin Control Panel</h2>
+    
+    <!-- Stat Cards Overview -->
+    <div class="row mb-5">
+        <div class="col-md-3">
+            <div class="card text-white bg-primary shadow-sm border-0 h-100">
+                <div class="card-body text-center">
+                    <h1 class="display-4 fw-bold">{{ total_users }}</h1>
+                    <p class="mb-0 text-uppercase small fw-bold">Total Users</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-white bg-success shadow-sm border-0 h-100">
+                <div class="card-body text-center">
+                    <h1 class="display-4 fw-bold">{{ total_tasks }}</h1>
+                    <p class="mb-0 text-uppercase small fw-bold">Tasks in Pool</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-white bg-warning shadow-sm border-0 h-100">
+                <div class="card-body text-center">
+                    <h1 class="display-4 fw-bold">{{ total_events }}</h1>
+                    <p class="mb-0 text-uppercase small fw-bold">Upcoming Events</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-white bg-danger shadow-sm border-0 h-100">
+                <div class="card-body text-center">
+                    <h1 class="display-4 fw-bold">{{ pending_submissions }}</h1>
+                    <p class="mb-0 text-uppercase small fw-bold">Pending Submissions</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Admin Navigation Links -->
+    <h4 class="fw-bold mb-3">Management Modules</h4>
+    <div class="row">
+        <div class="col-md-6 mb-4">
+            <div class="card shadow-sm border-0">
+                <div class="card-body">
+                    <h5 class="card-title fw-bold">User Management</h5>
+                    <p class="card-text text-muted">View registered accounts, ban rule-breakers, or delete users.</p>
+                    <a href="{{ url_for('admin_users') }}" class="btn btn-dark w-100">Manage Users</a>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6 mb-4">
+            <div class="card shadow-sm border-0">
+                <div class="card-body">
+                    <h5 class="card-title fw-bold">Task Pool Management</h5>
+                    <p class="card-text text-muted">Create, edit, or delete the daily tasks assigned to students.</p>
+                    <a href="#" class="btn btn-dark w-100">Manage Tasks</a>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6 mb-4">
+            <div class="card shadow-sm border-0">
+                <div class="card-body">
+                    <h5 class="card-title fw-bold">Event Management</h5>
+                    <p class="card-text text-muted">Schedule new campus events, set capacity, and track RSVPs.</p>
+                    <a href="{{ url_for('manage_events') }}" class="btn btn-dark w-100">Manage Events</a>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6 mb-4">
+            <div class="card shadow-sm border-0">
+                <div class="card-body">
+                    <h5 class="card-title fw-bold">Weekly Challenges</h5>
+                    <p class="card-text text-muted">Verify student submissions and award points for weekly challenges.</p>
+                    <button class="btn btn-secondary w-100" disabled>Coming Soon</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
