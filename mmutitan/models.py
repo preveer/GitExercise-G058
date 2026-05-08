@@ -91,3 +91,13 @@ class UserTask(db.Model):
     proof_image = db.Column(db.String(100), nullable=True)
     date_accepted = db.Column(db.DateTime, default=db.func.current_timestamp())
     task = db.relationship('Task', backref=db.backref('assigned_users', lazy=True))
+
+class Point(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    amount = db.Column(db.Integer, nullable=False)
+    source = db.Column(db.String(100), nullable=False) # e.g., "Daily Tasks"
+    awarded_at = db.Column(db.DateTime, default=datetime.utcnow)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+
+    def __repr__(self):
+        return f"Point('{self.amount}', '{self.source}', '{self.awarded_at}')"
