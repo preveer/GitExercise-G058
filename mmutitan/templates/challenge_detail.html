@@ -1,0 +1,101 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container mt-5">
+    <div class="row">
+        <div class="col-md-8 mb-4">
+            
+            <div class="card shadow-sm border-0 mb-4">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h2 class="card-title text-primary fw-bold mb-0">{{ challenge.title }}</h2>
+                        {% if challenge.is_closed %}
+                            <span class="badge bg-danger fs-6">Closed</span>
+                        {% else %}
+                            <span class="badge bg-success fs-6">Active</span>
+                        {% endif %}
+                    </div>
+                    
+                    <p class="badge bg-info text-dark mb-4">{{ challenge.sport_category }}</p>
+
+                    <h5 class="fw-bold">Description</h5>
+                    <p class="text-muted">{{ challenge.description }}</p>
+
+                    <div class="row mt-4">
+                        <div class="col-sm-6">
+                            <h5 class="fw-bold">Scoring Criteria</h5>
+                            <p class="text-muted">{{ challenge.scoring_criteria }}</p>
+                        </div>
+                        <div class="col-sm-6">
+                            <h5 class="fw-bold">Deadline</h5>
+                            <p class="text-danger fw-bold">{{ challenge.deadline.strftime('%B %d, %Y at %I:%M %p') }}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card shadow-sm border-0 bg-light">
+                <div class="card-body">
+                    <h4 class="fw-bold mb-3">Submit Your Attempt</h4>
+
+                    {% if challenge.is_closed %}
+                        <div class="alert alert-warning mb-0">
+                            <strong>Challenge Closed!</strong> The deadline has passed or an admin has closed this challenge. No more submissions are allowed.
+                        </div>
+                        
+                    {% elif existing_submission %}
+                        <div class="alert alert-success">
+                            <strong>You've already submitted!</strong> 
+                            <hr>
+                            Your result: <strong>{{ existing_submission.result }}</strong>
+                        </div>
+                        <p class="fw-bold mb-1">Your uploaded proof:</p>
+                        <img src="{{ url_for('static', filename='uploads/' + existing_submission.proof_file) }}" alt="Your Proof" class="img-fluid rounded shadow-sm" style="max-height: 250px; object-fit: cover;">
+                        
+                    {% else %}
+                        <form method="POST" action="" enctype="multipart/form-data">
+                            <div class="mb-3">
+                                <label for="result" class="form-label fw-bold">Your Result (e.g., "50 pushups", "12:30 mins")</label>
+                                <input type="text" class="form-control" id="result" name="result" placeholder="Enter your score/time" required>
+                            </div>
+                            <div class="mb-4">
+                                <label for="proof_file" class="form-label fw-bold">Upload Photo Proof</label>
+                                <input class="form-control" type="file" id="proof_file" name="proof_file" accept="image/*" required>
+                                <div class="form-text">Please upload a clear image showing your achievement.</div>
+                            </div>
+                            <button type="submit" class="btn btn-primary w-100 fw-bold fs-5">Submit Attempt</button>
+                        </form>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card shadow-sm border-0 sticky-top" style="top: 20px;">
+                <div class="card-header bg-dark text-white">
+                    <h5 class="mb-0">Live Leaderboard</h5>
+                </div>
+                <div class="card-body p-0">
+                    {% if submissions %}
+                        <ul class="list-group list-group-flush">
+                            {% for sub in submissions %}
+                                <li class="list-group-item d-flex justify-content-between align-items-center py-3">
+                                    <div>
+                                        <strong>{{ sub.user.name }}</strong>
+                                        <br>
+                                        <span class="text-muted">{{ sub.result }}</span>
+                                    </div>
+                                    {% if sub.verified %}
+                                        <span class="badge bg-success rounded-pill" title="Verified by Admin">Verified ✓</span>
+                                    {% endif %}
+                                </li>
+                            {% endfor %}
+                        </ul>
+                    {% else %}
+                        <p class="text-center text-muted my-4">No submissions yet. Be the first to claim the top spot!</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

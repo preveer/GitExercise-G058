@@ -2,9 +2,7 @@ import os
 import secrets
 from flask import Flask, render_template, url_for, flash, redirect, request
 from flask_login import login_user, current_user, logout_user, login_required
-# Added Challenge and Submission here!
 from models import Task, db, login_manager, User, Badge, Event, RSVP, UserTask, Challenge, Submission
-# Added ChallengeForm here!
 from forms import RegistrationForm, LoginForm, EventForm, ChangePasswordForm, UpdateProfileForm, TaskForm, ChallengeForm 
 from config import Config
 import random
@@ -413,6 +411,73 @@ def create_app():
         db.session.commit()
         flash('Challenge is now closed for new submissions!', 'info')
         return redirect(url_for('admin_challenges'))
+
+    # --- AAHTITIYA'S WEEKLY CHALLENGE STUDENT ROUTES (WEEK 7) ---
+
+    @app.route('/challenges')
+    @login_required
+    def student_challenges():
+        # Get all challenges, ordering by newest deadline first
+        challenges = Challenge.query.order_by(Challenge.deadline.desc()).all()
+        return render_template('student_challenges.html', title='Weekly Challenges', challenges=challenges)
+
+    @app.route('/challenge/<int:challenge_id>', methods=['GET', 'POST'])
+    @login_required
+    def challenge_detail(challenge_id):
+        challenge = Challenge.query.get_or_404(challenge_id)
+        
+        # 1. Check if the current user has already submitted
+        existing_submission = Submission.query.filter_by(user_id=current_user.id, challenge_id=challenge.id).first()
+        
+        # 2. Grab all submissions for this challenge to show on the live leaderboard
+        submissions = Submission.query.filter_by(challenge_id=challenge.id).order_by(Submission.submitted_at.desc()).all()
+
+        # 3. Handle the form submission when a student uploads proof
+        if request.method == 'POST':
+            # Security Check 1: Is the challenge closed?
+            if challenge.is_closed:
+                flash('This challenge is closed to new submissions.', 'danger')
+                return redirect(url_for('challenge_detail', challenge_id=challenge.id))
+
+            # Security Check 2: Did they already submit?
+            if existing_submission:
+                flash('You have already submitted your attempt for this challenge!', 'warning')
+                return redirect(url_for('challenge_detail', challenge_id=challenge.id))
+
+            # Grab the data from the HTML form
+            result_text = request.form.get('result')
+            proof_file = request.files.get('proof_file')
+
+            if result_text and proof_file and proof_file.filename != '':
+                # Create a safe, random file name for the picture
+                random_hex = secrets.token_hex(8)
+                _, f_ext = os.path.splitext(proof_file.filename)
+                file_fn = random_hex + f_ext
+                
+                # Make sure the 'static/uploads' folder exists on your Mac
+                uploads_dir = os.path.join(app.root_path, 'static/uploads')
+                os.makedirs(uploads_dir, exist_ok=True)
+                
+                # Save the picture to the folder
+                file_path = os.path.join(uploads_dir, file_fn)
+                proof_file.save(file_path)
+
+                # Save the submission data to the database
+                new_submission = Submission(
+                    user_id=current_user.id,
+                    challenge_id=challenge.id,
+                    result=result_text,
+                    proof_file=file_fn
+                )
+                db.session.add(new_submission)
+                db.session.commit()
+                
+                flash('Your attempt has been submitted successfully!', 'success')
+                return redirect(url_for('challenge_detail', challenge_id=challenge.id))
+            else:
+                flash('Please provide both your result text and a proof file.', 'danger')
+
+        return render_template('challenge_detail.html', title=challenge.title, challenge=challenge, existing_submission=existing_submission, submissions=submissions)
 
     return app
 
