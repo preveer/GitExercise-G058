@@ -2,8 +2,10 @@ import os
 import secrets
 from flask import Flask, render_template, url_for, flash, redirect, request
 from flask_login import login_user, current_user, logout_user, login_required
-from models import Task, db, login_manager, User, Badge, Event, RSVP, UserTask, Point
-from forms import RegistrationForm, LoginForm, EventForm, ChangePasswordForm, UpdateProfileForm, TaskForm 
+# Added Challenge and Submission here!
+from models import Task, db, login_manager, User, Badge, Event, RSVP, UserTask, Challenge, Submission
+# Added ChallengeForm here!
+from forms import RegistrationForm, LoginForm, EventForm, ChangePasswordForm, UpdateProfileForm, TaskForm, ChallengeForm 
 from config import Config
 import random
 import datetime
@@ -407,39 +409,99 @@ def create_app():
         return redirect(url_for('daily_tasks'))
     @app.route('/leaderboard')
     @login_required
-    def leaderboard():
-        # Get filter values from the URL (if any)
-        faculty_filter = request.args.get('faculty', '')
-        sport_filter = request.args.get('sport', '')
+    def admin_challenges():
+        if not current_user.is_admin:
+            flash('Access denied.', 'danger')
+            return redirect(url_for('home'))
+        challenges = Challenge.query.all()
+        return render_template('admin_challenges.html', title='Manage Challenges', challenges=challenges)
 
-        # Start with a base query for all non-admin users
-        query = User.query.filter_by(is_admin=False)
+    @app.route('/admin/challenges/add', methods=['GET', 'POST'])
+    @login_required
+    def add_challenge():
+        if not current_user.is_admin:
+            return redirect(url_for('home'))
+        form = ChallengeForm()
+        if form.validate_on_submit():
+            new_challenge = Challenge(
+                title=form.title.data,
+                description=form.description.data,
+                sport_category=form.sport_category.data,
+                deadline=form.deadline.data,
+                scoring_criteria=form.scoring_criteria.data
+            )
+            db.session.add(new_challenge)
+            db.session.commit()
+            flash('New weekly challenge created!', 'success')
+            return redirect(url_for('admin_challenges'))
+        return render_template('admin_challenge_form.html', title='Add Challenge', form=form, legend='Create New Challenge')
 
-        # Apply filters if they are selected
-        if faculty_filter:
-            query = query.filter(User.faculty == faculty_filter)
-        if sport_filter:
-            query = query.filter(User.sport_preferences.ilike(f"%{sport_filter}%"))
+    @app.route('/admin/challenges/edit/<int:challenge_id>', methods=['GET', 'POST'])
+    @login_required
+    def edit_challenge(challenge_id):
+        if not current_user.is_admin:
+            return redirect(url_for('home'))
+        challenge = Challenge.query.get_or_404(challenge_id)
+        form = ChallengeForm()
+        if form.validate_on_submit():
+            challenge.title = form.title.data
+            challenge.description = form.description.data
+            challenge.sport_category = form.sport_category.data
+            challenge.deadline = form.deadline.data
+            challenge.scoring_criteria = form.scoring_criteria.data
+            db.session.commit()
+            flash('Challenge updated!', 'success')
+            return redirect(url_for('admin_challenges'))
+        elif request.method == 'GET':
+            form.title.data = challenge.title
+            form.description.data = challenge.description
+            form.sport_category.data = challenge.sport_category
+            form.deadline.data = challenge.deadline
+            form.scoring_criteria.data = challenge.scoring_criteria
+        return render_template('admin_challenge_form.html', title='Edit Challenge', form=form, legend='Edit Challenge')
 
-        # Fetch data for both boards
-        # Points Board: Ranked by points (highest to lowest)
-        points_leaderboard = query.order_by(User.points.desc()).all()
-        
-        # Streak Board: Ranked by streak (highest to lowest)
-        streak_leaderboard = query.order_by(User.streak.desc()).all()
+    @app.route('/admin/challenges/delete/<int:challenge_id>', methods=['POST'])
+    @login_required
+    def delete_challenge(challenge_id):
+        if not current_user.is_admin:
+            return redirect(url_for('home'))
+        challenge = Challenge.query.get_or_404(challenge_id)
+        db.session.delete(challenge)
+        db.session.commit()
+        flash('Challenge deleted.', 'info')
+        return redirect(url_for('admin_challenges'))
 
-        # Get unique faculties and sports for the filter dropdowns
-        all_faculties = db.session.query(User.faculty).distinct().all()
-        all_sports = ["Football", "Badminton", "Basketball", "Tennis", "Swimming"] # Common MMU sports
+    @app.route('/admin/challenges/<int:challenge_id>/submissions')
+    @login_required
+    def view_submissions(challenge_id):
+        if not current_user.is_admin:
+            return redirect(url_for('home'))
+        challenge = Challenge.query.get_or_404(challenge_id)
+        submissions = Submission.query.filter_by(challenge_id=challenge.id).all()
+        return render_template('admin_submissions.html', title='View Submissions', challenge=challenge, submissions=submissions)
 
-        return render_template('leaderboard.html', 
-                               title='Leaderboard',
-                               points_users=points_leaderboard,
-                               streak_users=streak_leaderboard,
-                               faculties=[f[0] for f in all_faculties if f[0]],
-                               sports=all_sports,
-                               selected_faculty=faculty_filter,
-                               selected_sport=sport_filter)
+    @app.route('/admin/submissions/<int:submission_id>/verify', methods=['POST'])
+    @login_required
+    def verify_submission(submission_id):
+        if not current_user.is_admin:
+            return redirect(url_for('home'))
+        submission = Submission.query.get_or_404(submission_id)
+        submission.verified = True
+        db.session.commit()
+        flash('Submission verified successfully!', 'success')
+        return redirect(url_for('view_submissions', challenge_id=submission.challenge_id))
+
+    @app.route('/admin/challenges/<int:challenge_id>/close', methods=['POST'])
+    @login_required
+    def close_challenge(challenge_id):
+        if not current_user.is_admin:
+            return redirect(url_for('home'))
+        challenge = Challenge.query.get_or_404(challenge_id)
+        challenge.is_closed = True
+        db.session.commit()
+        flash('Challenge is now closed for new submissions!', 'info')
+        return redirect(url_for('admin_challenges'))
+
     return app
 
 if __name__ == '__main__':

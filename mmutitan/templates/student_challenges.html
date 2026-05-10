@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container mt-5">
+    <div class="text-center mb-5">
+        <h1 class="display-4 fw-bold text-primary">Weekly Sport Challenges</h1>
+        <p class="lead text-muted">Compete against your fellow Titans and climb the leaderboard!</p>
+    </div>
+
+    <div class="row">
+        {% if challenges %}
+            {% for challenge in challenges %}
+            <div class="col-md-4 mb-4">
+                <div class="card h-100 shadow-sm border-0 bg-light">
+                    <div class="card-body">
+                        <div class="mb-2">
+                            {% if challenge.is_closed %}
+                            <span class="badge bg-danger">Closed</span>
+                            {% else %}
+                            <span class="badge bg-success">Active</span>
+                            {% endif %}
+                            <span class="badge bg-info text-dark">{{ challenge.sport_category }}</span>
+                        </div>
+                        
+                        <h4 class="card-title fw-bold">{{ challenge.title }}</h4>
+                        <p class="card-text text-muted mb-4">{{ challenge.description[:100] }}...</p>
+                        
+                        <ul class="list-unstyled mb-4">
+                            <li><strong>Deadline:</strong> <br> {{ challenge.deadline.strftime('%b %d, %Y at %I:%M %p') }}</li>
+                            <li class="mt-2"><strong>Scoring:</strong> <br> {{ challenge.scoring_criteria }}</li>
+                        </ul>
+                    </div>
+                    <div class="card-footer bg-white border-0 pb-3 text-center">
+                        <a href="{{ url_for('challenge_detail', challenge_id=challenge.id) }}" class="btn btn-primary w-100 fw-bold">View Challenge</a>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        {% else %}
+            <div class="col-12 text-center my-5">
+                <h4 class="text-muted">No challenges are currently available. Check back later!</h4>
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
