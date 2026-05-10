@@ -2,11 +2,12 @@ import os
 import secrets
 from flask import Flask, render_template, url_for, flash, redirect, request
 from flask_login import login_user, current_user, logout_user, login_required
-from models import Task, db, login_manager, User, Badge, Event, RSVP, UserTask
+from models import Task, db, login_manager, User, Badge, Event, RSVP, UserTask, Point
 from forms import RegistrationForm, LoginForm, EventForm, ChangePasswordForm, UpdateProfileForm, TaskForm 
 from config import Config
 import random
-from models import Task, db, login_manager, User, Badge, Event, RSVP, UserTask, Point
+import datetime
+from datetime import date   
 
 def create_app():
     app = Flask(__name__)
@@ -273,20 +274,6 @@ def create_app():
         return redirect(url_for('list_events'))
 
     # --- TASK ROUTES ---
-    @app.route('/tasks')
-    @login_required
-    def daily_tasks():
-        tasks = Task.query.all()
-        return render_template('student_tasks.html', title='Task Pool', tasks=tasks)
-
-    @app.route('/admin/tasks')
-    @login_required
-    def admin_tasks():
-        if not current_user.is_admin:
-            flash('Access denied.', 'danger')
-            return redirect(url_for('home'))
-        tasks = Task.query.all()
-        return render_template('admin_tasks.html', title='Task Management', tasks=tasks)
 
     @app.route('/admin/tasks/add', methods=['GET', 'POST'])
     @login_required
