@@ -48,6 +48,19 @@ def create_app():
             new_point = Point(user_id=user_id, amount=amount, source=source)
             db.session.add(new_point)
 
+        # CENTRAL BADGE ENGINE
+    def check_and_award_badges(user):
+        """Checks and awards badges based on current user stats."""
+        # 1. Streak Master (7 Day Streak)
+        if user.streak >= 7:
+            streak_badge = Badge.query.filter_by(title='Streak Master').first()
+            if streak_badge and streak_badge not in user.badges:
+                user.badges.append(streak_badge)
+                db.session.commit()
+                return "You've earned the Streak Master badge!"
+        
+        return None
+
 
         # --- MAIN ROUTES ---
         @app.route('/')
@@ -670,6 +683,32 @@ def create_app():
         db.session.commit()
         flash('Badge has been deleted.', 'info')
         return redirect(url_for('admin_badges'))
+    
+    # --- UPDATED: TASK COMPLETION LOGIC ---
+    
+    @app.route("/task/<int:utask_id>/complete", methods=['POST'])
+    @login_required
+    def complete_task(utask_id):
+        utask = UserTask.query.get_or_404(utask_id)
+        if utask.user_id != current_user.id:
+            abort(403)
+        
+        utask.status = 'Completed'
+        current_user.points += 10
+        current_user.streak += 1  # Increment streak
+        
+        # LOG THE POINTS
+        new_point = Point(amount=10, source=f"Task: {utask.task_ref.title}", user_id=current_user.id)
+        db.session.add(new_point)
+        
+        # CHECK FOR BADGES (STREAK MASTER)
+        badge_msg = check_and_award_badges(current_user)
+        if badge_msg:
+            flash(badge_msg, 'info')
+            
+        db.session.commit()
+        flash('Task completed! +10 Points and Streak Up!', 'success')
+        return redirect(url_for('daily_tasks'))
 
 
     return app
