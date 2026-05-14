@@ -684,6 +684,37 @@ def create_app():
         flash('Badge has been deleted.', 'info')
         return redirect(url_for('admin_badges'))
     
+    # --- UPDATED: VERIFY SUBMISSION WITH WEEKLY WINNER LOGIC ---
+
+    @app.route("/admin/verify_submission/<int:submission_id>", methods=['POST'])
+    @login_required
+    def verify_submission(submission_id):
+        if not current_user.is_admin:
+            abort(403)
+        
+        submission = Submission.query.get_or_404(submission_id)
+        submission.verified = True
+        
+        # Award Points for verification
+        student = User.query.get(submission.user_id)
+        student.points += 50
+        
+        # LOG THE POINTS
+        new_point = Point(amount=50, source=f"Challenge Verified: {submission.challenge_ref.title}", user_id=student.id)
+        db.session.add(new_point)
+
+        # WEEKLY WINNER CHECK: Is this user in the top 3 on the leaderboard?
+        top_3_users = User.query.order_by(User.points.desc()).limit(3).all()
+        if student in top_3_users:
+            winner_badge = Badge.query.filter_by(title='Weekly Winner').first()
+            if winner_badge and winner_badge not in student.badges:
+                student.badges.append(winner_badge)
+                flash(f"Verification complete! {student.name} is in the Top 3 and earned the Weekly Winner badge!", 'success')
+        
+        db.session.commit()
+        flash('Submission verified and points awarded!', 'success')
+        return redirect(url_for('admin_submissions'))
+    
     # --- UPDATED: TASK COMPLETION LOGIC ---
     
     @app.route("/task/<int:utask_id>/complete", methods=['POST'])
