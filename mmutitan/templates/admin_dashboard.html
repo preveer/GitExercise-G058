@@ -3,7 +3,6 @@
 <div class="container mt-4">
     <h2 class="fw-bold mb-4">Admin Control Panel</h2>
     
-    <!-- Stat Cards Overview -->
     <div class="row mb-5">
         <div class="col-md-3">
             <div class="card text-white bg-primary shadow-sm border-0 h-100">
@@ -39,7 +38,6 @@
         </div>
     </div>
 
-    <!-- Admin Navigation Links -->
     <h4 class="fw-bold mb-3">Management Modules</h4>
     <div class="row">
         <div class="col-md-6 mb-4">
@@ -56,7 +54,7 @@
                 <div class="card-body">
                     <h5 class="card-title fw-bold">Task Pool Management</h5>
                     <p class="card-text text-muted">Create, edit, or delete the daily tasks assigned to students.</p>
-                    <a href="#" class="btn btn-dark w-100">Manage Tasks</a>
+                    <a href="{{ url_for('admin_tasks') }}" class="btn btn-dark w-100">Manage Tasks</a>
                 </div>
             </div>
         </div>
@@ -74,7 +72,16 @@
                 <div class="card-body">
                     <h5 class="card-title fw-bold">Weekly Challenges</h5>
                     <p class="card-text text-muted">Verify student submissions and award points for weekly challenges.</p>
-                    <button class="btn btn-secondary w-100" disabled>Coming Soon</button>
+                    <a href="{{ url_for('admin_challenges') }}" class="btn btn-dark w-100">Manage Challenges</a>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6 mb-4">
+            <div class="card shadow-sm border-0 border-start border-danger border-4">
+                <div class="card-body">
+                    <h5 class="card-title fw-bold">Badge Management</h5>
+                    <p class="card-text text-muted">Create new achievement badges for the student platform.</p>
+                    <a href="{{ url_for('admin_badges') }}" class="btn btn-outline-danger w-100">Manage Badges</a>
                 </div>
             </div>
         </div>
