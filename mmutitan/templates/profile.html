@@ -2,72 +2,68 @@
 {% block content %}
 <div class="container mt-5">
     <div class="row">
-        <!-- Sidebar -->
         <div class="col-md-4">
-            <div class="card shadow border-0 text-center p-4">
-                <img src="{{ url_for('static', filename='profile_pics/' + current_user.profile_photo) }}"
-                     class="rounded-circle img-thumbnail mx-auto"
-                     style="width: 150px; height: 150px; object-fit: cover;">
-                <h3 class="fw-bold mt-3">{{ user.name }}</h3>
-                <p class="text-muted">{{ user.faculty }} | Year {{ user.year }}</p>
+            <div class="card shadow border-0 text-center p-4 mb-4">
+                <img src="{{ url_for('static', filename='profile_pics/' + user.profile_photo) }}" 
+                     class="rounded-circle img-thumbnail mx-auto mb-3" style="width: 150px; height: 150px; object-fit: cover;">
+                <h3 class="fw-bold">{{ user.name }}</h3>
+                <p class="text-muted mb-1">{{ user.faculty }}</p>
+                <div class="mb-3">
+                    <span class="badge bg-danger rounded-pill px-3">{{ user.points }} Points</span>
+                    <span class="badge bg-warning text-dark rounded-pill px-3">{{ user.streak }} Day Streak</span>
+                </div>
+                
                 <div class="d-grid gap-2">
-                    <a href="{{ url_for('change_password') }}" class="btn btn-outline-dark btn-sm">Change Password</a>
-                    <a href="{{ url_for('edit_profile') }}" class="btn btn-danger btn-sm">Edit Profile</a>
+                    <a href="{{ url_for('edit_profile') }}" class="btn btn-outline-dark btn-sm">Edit Profile</a>
+                </div>
+            </div>
+
+            <div class="card shadow border-0 p-4 mb-4">
+                <div class="d-flex justify-content-between align-items-center border-bottom pb-2 mb-3">
+                    <h5 class="fw-bold mb-0">Achievements</h5>
+                    <a href="{{ url_for('my_badges') }}" class="small text-danger text-decoration-none fw-bold">View All</a>
+                </div>
+                <div class="row g-2">
+                    {% for badge in user.badges[:3] %}
+                    <div class="col-4 text-center">
+                        <img src="{{ url_for('static', filename='profile_pics/default_badge.png') }}" 
+                             class="img-fluid mb-1" style="width: 40px;" title="{{ badge.title }}">
+                        <p class="small mb-0 text-truncate" style="font-size: 0.65rem;">{{ badge.title }}</p>
+                    </div>
+                    {% else %}
+                    <p class="text-muted small text-center w-100">No badges earned yet. Get active!</p>
+                    {% endfor %}
                 </div>
             </div>
         </div>
 
-        <!-- Main Content -->
         <div class="col-md-8">
-            <!-- Stats Cards -->
-            <div class="row mb-4">
-                <div class="col-md-6">
-                    <div class="card shadow border-0 bg-dark text-white p-3 text-center">
-                        <h6 class="text-uppercase small">Current Streak</h6>
-                        <h2 class="fw-bold">{{ user.streak }} Days</h2>
-                    </div>
-                </div>
-                <div class="col-md-6">
-                    <div class="card shadow border-0 bg-danger text-white p-3 text-center">
-                        <h6 class="text-uppercase small">Total Points</h6>
-                        <h2 class="fw-bold">{{ user.points }} pts</h2>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Points History Table -->
             <div class="card shadow border-0 p-4 mb-4">
-                <h5 class="fw-bold border-bottom pb-2">Points History</h5>
+                <h5 class="fw-bold border-bottom pb-2">Activity & Points History</h5>
                 <div class="table-responsive">
                     <table class="table table-hover mt-2">
                         <thead class="table-light">
-                            <tr>
+                            <tr class="small text-uppercase">
                                 <th>Source</th>
-                                <th>Amount</th>
+                                <th>Points</th>
                                 <th>Date</th>
                             </tr>
                         </thead>
                         <tbody>
-                            {% for log in point_history %}
+                            {% for log in user.points_history|reverse %}
                             <tr>
-                                <td>{{ log.source }}</td>
+                                <td class="fw-bold">{{ log.source }}</td>
                                 <td class="text-success fw-bold">+{{ log.amount }}</td>
                                 <td class="text-muted small">{{ log.awarded_at.strftime('%d %b %Y') }}</td>
                             </tr>
                             {% else %}
                             <tr>
-                                <td colspan="3" class="text-center text-muted">No points earned yet. Get active!</td>
+                                <td colspan="3" class="text-center text-muted py-4">No points earned yet.</td>
                             </tr>
                             {% endfor %}
                         </tbody>
                     </table>
                 </div>
-            </div>
-
-            <!-- Sport Preferences -->
-            <div class="card shadow border-0 p-4 mb-4">
-                <h5 class="fw-bold border-bottom pb-2">Sport Preferences</h5>
-                <p>{{ user.sport_preferences or "No preferences set yet." }}</p>
             </div>
         </div>
     </div>

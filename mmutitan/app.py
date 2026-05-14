@@ -225,10 +225,11 @@ def create_app():
             return render_template('change_password.html', title='Change Password', form=form)
 
 
-        @app.route('/my_badges')
+        @app.route("/my_badges")
         @login_required
         def my_badges():
-            return render_template('badges.html', title='My Badges', badges=current_user.badges)
+            all_badges = Badge.query.all()
+            return render_template('badges.html', all_badges=all_badges, title="My Achievements")
 
 
         # --- EVENT ROUTES ---
