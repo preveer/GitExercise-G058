@@ -3,14 +3,18 @@ import secrets
 import random
 from datetime import date, datetime
 
+
 from flask import Flask, abort, render_template, url_for, flash, redirect, request
 from flask_login import login_user, current_user, logout_user, login_required
+
 
 from models import (Task, db, login_manager, User, Badge, Event,
                     RSVP, UserTask, Challenge, Submission, Point)
 from forms import (BadgeForm, RegistrationForm, LoginForm, EventForm,
                    ChangePasswordForm, UpdateProfileForm, TaskForm, ChallengeForm)
 from config import Config
+
+
 
 
 def create_app():
@@ -20,12 +24,15 @@ def create_app():
     login_manager.init_app(app)
     login_manager.login_view = 'login'
 
+
     with app.app_context():
         db.create_all()
+
 
     # ------------------------------------------------------------------ #
     # HELPER FUNCTIONS
     # ------------------------------------------------------------------ #
+
 
     def save_picture(form_picture):
         random_hex = secrets.token_hex(8)
@@ -36,6 +43,7 @@ def create_app():
         form_picture.save(picture_path)
         return picture_fn
 
+
     def save_upload(form_file):
         random_hex = secrets.token_hex(8)
         _, f_ext = os.path.splitext(form_file.filename)
@@ -45,10 +53,12 @@ def create_app():
         form_file.save(file_path)
         return file_fn
 
+
     def award_points(user_id, amount, source):
         """Creates a Point log entry. Caller must commit."""
         new_point = Point(user_id=user_id, amount=amount, source=source)
         db.session.add(new_point)
+
 
     def check_and_award_badges(user):
         """Checks user stats and awards badges they have earned."""
@@ -58,15 +68,18 @@ def create_app():
                 user.badges.append(streak_badge)
                 flash("You've earned the Streak Master badge!", 'warning')
 
+
     # ------------------------------------------------------------------ #
     # MAIN ROUTES
     # ------------------------------------------------------------------ #
+
 
     @app.route('/')
     def home():
         if current_user.is_authenticated:
             return render_template('dashboard.html', title='Dashboard')
         return render_template('home.html')
+
 
     @app.route('/register', methods=['GET', 'POST'])
     def register():
@@ -90,6 +103,7 @@ def create_app():
             return redirect(url_for('login'))
         return render_template('register.html', title='Register', form=form)
 
+
     @app.route('/login', methods=['GET', 'POST'])
     def login():
         if current_user.is_authenticated:
@@ -108,15 +122,18 @@ def create_app():
                 flash('Login Unsuccessful. Check email and password.', 'danger')
         return render_template('login.html', title='Login', form=form)
 
+
     @app.route('/logout')
     def logout():
         logout_user()
         flash('You have been logged out.', 'info')
         return redirect(url_for('login'))
 
+
     # ------------------------------------------------------------------ #
     # ADMIN ROUTES
     # ------------------------------------------------------------------ #
+
 
     @app.route('/admin')
     @login_required
@@ -134,6 +151,7 @@ def create_app():
                                total_events=total_events,
                                pending_submissions=pending_submissions)
 
+
     @app.route('/admin/users')
     @login_required
     def admin_users():
@@ -142,6 +160,7 @@ def create_app():
             return redirect(url_for('home'))
         users = User.query.all()
         return render_template('admin_users.html', users=users)
+
 
     @app.route('/admin/users/<int:user_id>/ban', methods=['POST'])
     @login_required
@@ -158,6 +177,7 @@ def create_app():
             flash(f"User {user.name} has been {status}.", "success")
         return redirect(url_for('admin_users'))
 
+
     @app.route('/admin/users/<int:user_id>/delete', methods=['POST'])
     @login_required
     def delete_user(user_id):
@@ -172,9 +192,11 @@ def create_app():
             flash(f"User {user.name} has been permanently deleted.", "success")
         return redirect(url_for('admin_users'))
 
+
     # ------------------------------------------------------------------ #
     # ADMIN — BADGE ROUTES
     # ------------------------------------------------------------------ #
+
 
     @app.route('/admin/badges')
     @login_required
@@ -183,6 +205,7 @@ def create_app():
             abort(403)
         badges = Badge.query.all()
         return render_template('admin_badges.html', badges=badges, title="Manage Badges")
+
 
     @app.route('/admin/badges/new', methods=['GET', 'POST'])
     @login_required
@@ -202,6 +225,7 @@ def create_app():
             return redirect(url_for('admin_badges'))
         return render_template('admin_badge_form.html', title='New Badge',
                                form=form, legend='Create New Badge')
+
 
     @app.route('/admin/badges/<int:badge_id>/edit', methods=['GET', 'POST'])
     @login_required
@@ -224,6 +248,7 @@ def create_app():
         return render_template('admin_badge_form.html', title='Edit Badge',
                                form=form, legend='Edit Badge')
 
+
     @app.route('/admin/badges/<int:badge_id>/delete', methods=['POST'])
     @login_required
     def delete_badge(badge_id):
@@ -235,9 +260,11 @@ def create_app():
         flash('Badge has been deleted.', 'info')
         return redirect(url_for('admin_badges'))
 
+
     # ------------------------------------------------------------------ #
     # ADMIN — SUBMISSION VERIFICATION
     # ------------------------------------------------------------------ #
+
 
     @app.route('/admin/submissions/<int:submission_id>/verify', methods=['POST'])
     @login_required
@@ -266,9 +293,11 @@ def create_app():
         return redirect(url_for('view_submissions',
                                 challenge_id=submission.challenge_id))
 
+
     # ------------------------------------------------------------------ #
     # PROFILE ROUTES
     # ------------------------------------------------------------------ #
+
 
     @app.route('/profile')
     @login_required
@@ -279,6 +308,7 @@ def create_app():
                          .all())
         return render_template('profile.html', title='My Profile',
                                user=current_user, point_history=point_history)
+
 
     @app.route('/profile/edit', methods=['GET', 'POST'])
     @login_required
@@ -301,6 +331,7 @@ def create_app():
             form.sport_preferences.data = current_user.sport_preferences
         return render_template('edit_profile.html', title='Edit Profile', form=form)
 
+
     @app.route('/change_password', methods=['GET', 'POST'])
     @login_required
     def change_password():
@@ -317,6 +348,7 @@ def create_app():
         return render_template('change_password.html',
                                title='Change Password', form=form)
 
+
     @app.route('/my_badges')
     @login_required
     def my_badges():
@@ -324,9 +356,11 @@ def create_app():
         return render_template('badges.html', all_badges=all_badges,
                                title="My Achievements")
 
+
     # ------------------------------------------------------------------ #
     # EVENT ROUTES
     # ------------------------------------------------------------------ #
+
 
     @app.route('/admin/events', methods=['GET', 'POST'])
     @login_required
@@ -351,6 +385,7 @@ def create_app():
         events = Event.query.all()
         return render_template('admin_events.html', events=events, form=form)
 
+
     @app.route('/events')
     @login_required
     def list_events():
@@ -364,6 +399,7 @@ def create_app():
             spots_left[event.id] = event.max_capacity - confirmed_count
         return render_template('events.html', events=events,
                                user_rsvps=user_rsvps, spots_left=spots_left)
+
 
     @app.route('/rsvp/<int:event_id>', methods=['POST'])
     @login_required
@@ -381,6 +417,7 @@ def create_app():
         db.session.commit()
         flash('RSVP Successful!', 'success')
         return redirect(url_for('list_events'))
+
 
     @app.route('/cancel_rsvp/<int:event_id>', methods=['POST'])
     @login_required
@@ -400,6 +437,7 @@ def create_app():
         db.session.commit()
         flash('RSVP successfully cancelled.', 'success')
         return redirect(url_for('list_events'))
+
 
     @app.route('/checkin/<int:event_id>', methods=['POST'])
     @login_required
@@ -424,9 +462,11 @@ def create_app():
             flash('Check-in failed. You must have a confirmed spot.', 'danger')
         return redirect(url_for('list_events'))
 
+
     # ------------------------------------------------------------------ #
     # TASK ROUTES
     # ------------------------------------------------------------------ #
+
 
     @app.route('/admin/tasks')
     @login_required
@@ -436,6 +476,7 @@ def create_app():
             return redirect(url_for('home'))
         tasks = Task.query.all()
         return render_template('admin_tasks.html', tasks=tasks)
+
 
     @app.route('/admin/tasks/add', methods=['GET', 'POST'])
     @login_required
@@ -456,6 +497,7 @@ def create_app():
             flash('New task added!', 'success')
             return redirect(url_for('admin_tasks'))
         return render_template('admin_task_form.html', form=form, legend='Add New Task')
+
 
     @app.route('/admin/tasks/edit/<int:task_id>', methods=['GET', 'POST'])
     @login_required
@@ -481,6 +523,7 @@ def create_app():
             form.proof_required.data = task.proof_required
         return render_template('admin_task_form.html', form=form, legend='Edit Task')
 
+
     @app.route('/admin/tasks/delete/<int:task_id>', methods=['POST'])
     @login_required
     def delete_task(task_id):
@@ -492,6 +535,7 @@ def create_app():
         db.session.commit()
         flash('Task deleted.', 'info')
         return redirect(url_for('admin_tasks'))
+
 
     @app.route('/daily_tasks')
     @login_required
@@ -524,6 +568,7 @@ def create_app():
                 ).all()
         return render_template('daily_tasks.html', title='Daily Quests',
                                today_tasks=today_tasks)
+
 
     @app.route('/submit_proof/<int:user_task_id>', methods=['POST'])
     @login_required
@@ -563,6 +608,7 @@ def create_app():
             flash('Task submitted! Keep going to finish your daily 3.', 'info')
         return redirect(url_for('daily_tasks'))
 
+
     @app.route('/task/<int:utask_id>/complete', methods=['POST'])
     @login_required
     def complete_task(utask_id):
@@ -578,9 +624,11 @@ def create_app():
         flash('Task completed! +10 Points and Streak Up!', 'success')
         return redirect(url_for('daily_tasks'))
 
+
     # ------------------------------------------------------------------ #
     # CHALLENGE ROUTES (Admin)
     # ------------------------------------------------------------------ #
+
 
     @app.route('/admin/challenges')
     @login_required
@@ -591,6 +639,7 @@ def create_app():
         challenges = Challenge.query.all()
         return render_template('admin_challenges.html',
                                title='Manage Challenges', challenges=challenges)
+
 
     @app.route('/admin/challenges/add', methods=['GET', 'POST'])
     @login_required
@@ -614,6 +663,7 @@ def create_app():
         return render_template('admin_challenge_form.html',
                                title='Add Challenge', form=form,
                                legend='Create New Challenge')
+
 
     @app.route('/admin/challenges/edit/<int:challenge_id>', methods=['GET', 'POST'])
     @login_required
@@ -644,6 +694,7 @@ def create_app():
                                title='Edit Challenge', form=form,
                                legend='Edit Challenge')
 
+
     @app.route('/admin/challenges/delete/<int:challenge_id>', methods=['POST'])
     @login_required
     def delete_challenge(challenge_id):
@@ -654,6 +705,7 @@ def create_app():
         db.session.commit()
         flash('Challenge deleted.', 'info')
         return redirect(url_for('admin_challenges'))
+
 
     @app.route('/admin/challenges/<int:challenge_id>/submissions')
     @login_required
@@ -666,6 +718,7 @@ def create_app():
                                title='View Submissions',
                                challenge=challenge, submissions=submissions)
 
+
     @app.route('/admin/challenges/<int:challenge_id>/close', methods=['POST'])
     @login_required
     def close_challenge(challenge_id):
@@ -677,9 +730,11 @@ def create_app():
         flash('Challenge is now closed for new submissions!', 'info')
         return redirect(url_for('admin_challenges'))
 
+
     # ------------------------------------------------------------------ #
     # STUDENT CHALLENGE ROUTES
     # ------------------------------------------------------------------ #
+
 
     @app.route('/challenges')
     @login_required
@@ -687,6 +742,7 @@ def create_app():
         challenges = Challenge.query.all()
         return render_template('student_challenges.html',
                                title='Weekly Challenges', challenges=challenges)
+
 
     @app.route('/challenges/<int:challenge_id>', methods=['GET', 'POST'])
     @login_required
@@ -723,9 +779,11 @@ def create_app():
                                existing_submission=existing_submission,
                                submissions=submissions)
 
+
     # ------------------------------------------------------------------ #
     # LEADERBOARD ROUTE
     # ------------------------------------------------------------------ #
+
 
     @app.route('/leaderboard')
     @login_required
@@ -733,20 +791,26 @@ def create_app():
         selected_faculty = request.args.get('faculty', '')
         selected_sport = request.args.get('sport', '')
 
+
         faculties = [u[0] for u in db.session.query(User.faculty).distinct().all() if u[0]]
         sports = [u[0] for u in db.session.query(User.sport_preferences).distinct().all() if u[0]]
 
+
         base_query = User.query.filter_by(is_admin=False)
+
 
         if selected_faculty:
             base_query = base_query.filter_by(faculty=selected_faculty)
-        
+       
         if selected_sport:
+
 
             base_query = base_query.filter(User.sport_preferences.ilike(f'%{selected_sport}%'))
 
+
         points_users = base_query.order_by(User.points.desc()).all()
         streak_users = base_query.order_by(User.streak.desc()).all()
+
 
         return render_template('leaderboard.html',
                                points_users=points_users,
@@ -756,21 +820,27 @@ def create_app():
                                selected_faculty=selected_faculty,
                                selected_sport=selected_sport,
                                title="Leaderboard")
+   
+    @app.route("/admin/reset_season", methods=['POST'])
+    @login_required
+    def reset_season():
+        if not current_user.is_admin:
+            abort(403)
 
-@app.route("/admin/reset_season", methods=['POST'])
-@login_required
-def reset_season():
-    if not current_user.is_admin:
-        abort(403)
-    
-    students = User.query.filter_by(is_admin=False).all()
-    for student in students:
-        student.points = 0
-        student.streak = 0
-    
-    db.session.commit()
-    flash('The season has been reset. All student rankings are now at zero.', 'warning')
-    return redirect(url_for('admin_dashboard'))
+        students = User.query.filter_by(is_admin=False).all()
+
+        for student in students:
+            student.points = 0
+            student.streak = 0
+
+        db.session.commit()
+
+        flash(
+            'The season has been reset. All student rankings are now at zero.',
+            'warning'
+        )
+
+        return redirect(url_for('admin_dashboard'))
 
     return app
 
@@ -778,3 +848,6 @@ def reset_season():
 if __name__ == '__main__':
     app = create_app()
     app.run(debug=True)
+
+
+
