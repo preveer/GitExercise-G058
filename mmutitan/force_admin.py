@@ -4,9 +4,8 @@ from models import User
 app = create_app()
 
 with app.app_context():
-    # Look for your specific email
     user = User.query.filter_by(email='admin555@gmail.com').first()
-    
+
     if user:
         user.is_admin = True
         db.session.commit()
