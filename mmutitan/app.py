@@ -732,32 +732,45 @@ def create_app():
     def leaderboard():
         selected_faculty = request.args.get('faculty', '')
         selected_sport = request.args.get('sport', '')
-        faculties = [u[0] for u in
-                     db.session.query(User.faculty).distinct().all() if u[0]]
-        sports = [u[0] for u in
-                  db.session.query(User.sport_preferences).distinct().all()
-                  if u[0]]
-        points_query = User.query.filter_by(is_admin=False)
+
+        faculties = [u[0] for u in db.session.query(User.faculty).distinct().all() if u[0]]
+        sports = [u[0] for u in db.session.query(User.sport_preferences).distinct().all() if u[0]]
+
+        base_query = User.query.filter_by(is_admin=False)
+
         if selected_faculty:
-            points_query = points_query.filter_by(faculty=selected_faculty)
+            base_query = base_query.filter_by(faculty=selected_faculty)
+        
         if selected_sport:
-            points_query = points_query.filter(
-                User.sport_preferences.ilike(f'%{selected_sport}%'))
-        points_users = points_query.order_by(User.points.desc()).all()
-        streak_query = User.query.filter_by(is_admin=False)
-        if selected_faculty:
-            streak_query = streak_query.filter_by(faculty=selected_faculty)
-        if selected_sport:
-            streak_query = streak_query.filter(
-                User.sport_preferences.ilike(f'%{selected_sport}%'))
-        streak_users = streak_query.order_by(User.streak.desc()).all()
+
+            base_query = base_query.filter(User.sport_preferences.ilike(f'%{selected_sport}%'))
+
+        points_users = base_query.order_by(User.points.desc()).all()
+        streak_users = base_query.order_by(User.streak.desc()).all()
+
         return render_template('leaderboard.html',
                                points_users=points_users,
                                streak_users=streak_users,
                                faculties=faculties,
                                sports=sports,
                                selected_faculty=selected_faculty,
-                               selected_sport=selected_sport)
+                               selected_sport=selected_sport,
+                               title="Leaderboard")
+
+@app.route("/admin/reset_season", methods=['POST'])
+@login_required
+def reset_season():
+    if not current_user.is_admin:
+        abort(403)
+    
+    students = User.query.filter_by(is_admin=False).all()
+    for student in students:
+        student.points = 0
+        student.streak = 0
+    
+    db.session.commit()
+    flash('The season has been reset. All student rankings are now at zero.', 'warning')
+    return redirect(url_for('admin_dashboard'))
 
     return app
 

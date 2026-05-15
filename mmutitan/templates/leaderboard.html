@@ -1,98 +1,50 @@
 {% extends "base.html" %}
 {% block content %}
 <div class="container mt-4">
-    <h2 class="text-center mb-4">🏆 Titan Leaderboards</h2>
-
-    <div class="card mb-4 shadow-sm">
-        <div class="card-body">
-            <form method="GET" action="{{ url_for('leaderboard') }}" class="row g-3">
-                <div class="col-md-5">
-                    <label class="form-label">Filter by Faculty</label>
-                    <select name="faculty" class="form-select">
-                        <option value="">All Faculties</option>
-                        {% for faculty in faculties %}
-                        <option value="{{ faculty }}" {% if selected_faculty == faculty %}selected{% endif %}>{{ faculty }}</option>
-                        {% endfor %}
-                    </select>
-                </div>
-                <div class="col-md-5">
-                    <label class="form-label">Filter by Sport</label>
-                    <select name="sport" class="form-select">
-                        <option value="">All Sports</option>
-                        {% for sport in sports %}
-                        <option value="{{ sport }}" {% if selected_sport == sport %}selected{% endif %}>{{ sport }}</option>
-                        {% endfor %}
-                    </select>
-                </div>
-                <div class="col-md-2 d-flex align-items-end">
-                    <button type="submit" class="btn btn-primary w-100">Filter</button>
-                </div>
-            </form>
-        </div>
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="fw-bold">Leaderboard</h2>
+        
+        <form action="{{ url_for('leaderboard') }}" method="GET" class="d-flex">
+            <select name="faculty" class="form-select me-2" onchange="this.form.submit()">
+                <option value="">All Faculties</option>
+                <option value="FCI" {% if selected_faculty == 'FCI' %}selected{% endif %}>FCI</option>
+                <option value="FOE" {% if selected_faculty == 'FOE' %}selected{% endif %}>FOE</option>
+                <option value="FOM" {% if selected_faculty == 'FOM' %}selected{% endif %}>FOM</option>
+                <option value="FCM" {% if selected_faculty == 'FCM' %}selected{% endif %}>FCM</option>
+            </select>
+        </form>
     </div>
 
-    <ul class="nav nav-tabs mb-3" id="leaderboardTabs" role="tablist">
-        <li class="nav-item" role="presentation">
-            <button class="nav-link active" id="points-tab" data-bs-toggle="tab" data-bs-target="#points" type="button" role="tab">Points Board</button>
-        </li>
-        <li class="nav-item" role="presentation">
-            <button class="nav-link" id="streak-tab" data-bs-toggle="tab" data-bs-target="#streak" type="button" role="tab">Streak Board</button>
-        </li>
-    </ul>
-
-    <div class="tab-content" id="leaderboardTabsContent">
-        <div class="tab-pane fade show active" id="points" role="tabpanel">
-            <div class="table-responsive">
-                <table class="table table-hover align-middle shadow-sm">
-                    <thead class="table-dark">
-                        <tr>
-                            <th>Rank</th>
-                            <th>Student</th>
-                            <th>Faculty</th>
-                            <th>Main Sport</th>
-                            <th>Total Points</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for user in points_users %}
-                        <tr class="{% if user.id == current_user.id %}table-primary fw-bold border-primary{% endif %}">
-                            <td>#{{ loop.index }}</td>
-                            <td>{{ user.name }}</td>
-                            <td>{{ user.faculty }}</td>
-                            <td>{{ user.sport_preferences }}</td>
-                            <td><span class="badge bg-success">{{ user.points }} pts</span></td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
-        </div>
-
-        <div class="tab-pane fade" id="streak" role="tabpanel">
-            <div class="table-responsive">
-                <table class="table table-hover align-middle shadow-sm">
-                    <thead class="table-dark">
-                        <tr>
-                            <th>Rank</th>
-                            <th>Student</th>
-                            <th>Faculty</th>
-                            <th>Main Sport</th>
-                            <th>Current Streak</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for user in streak_users %}
-                        <tr class="{% if user.id == current_user.id %}table-primary fw-bold border-primary{% endif %}">
-                            <td>#{{ loop.index }}</td>
-                            <td>{{ user.name }}</td>
-                            <td>{{ user.faculty }}</td>
-                            <td>{{ user.sport_preferences }}</td>
-                            <td><span class="badge bg-warning text-dark">🔥 {{ user.streak }} Days</span></td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
+    <div class="card shadow-sm border-0">
+        <div class="card-body p-0">
+            <table class="table table-hover mb-0 text-center">
+                <thead class="table-dark">
+                    <tr>
+                        <th>Rank</th>
+                        <th>User</th>
+                        <th>Faculty</th>
+                        <th>Points</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for user in users %}
+                    <tr {% if user == current_user %}class="table-warning"{% endif %}>
+                        <td class="fw-bold">{{ loop.index }}</td>
+                        <td>
+                            <img src="{{ url_for('static', filename='profile_pics/' + user.profile_photo) }}" 
+                                 class="rounded-circle me-2" style="width: 30px; height: 30px; object-fit: cover;">
+                            {{ user.name }}
+                        </td>
+                        <td><span class="badge bg-secondary">{{ user.faculty }}</span></td>
+                        <td class="fw-bold text-danger">{{ user.points }}</td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="4" class="py-4 text-muted">No students found in this faculty.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
         </div>
     </div>
 </div>
