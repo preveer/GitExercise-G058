@@ -1,11 +1,27 @@
 {% extends "base.html" %}
 {% block content %}
 <div class="container mt-4">
+
+    {% if is_monday %}
     <div class="alert alert-warning border-0 shadow-sm p-4 mb-4" role="alert">
         <h4 class="alert-heading fw-bold">🏆 Weekly Titan Shoutout!</h4>
-        <p class="mb-0">Congratulations to <strong>Team FCI</strong> for dominating the leaderboard last week! Keep moving, Titans!</p>
+        
+        {% if recent_challenge and winners %}
+            <p class="mb-3">The results are in for last week's <strong>{{ recent_challenge.title }}</strong> challenge! Congratulations to our top performers:</p>
+            <ul class="list-unstyled mb-0 ms-2">
+                {% for winner in winners %}
+                    <li class="mb-2 fs-5">
+                        {% if loop.index == 1 %}🥇{% elif loop.index == 2 %}🥈{% else %}🥉{% endif %} 
+                        <strong>{{ winner.user.name }}</strong> 
+                        <span class="text-muted fs-6">— {{ winner.result }}</span>
+                    </li>
+                {% endfor %}
+            </ul>
+        {% else %}
+            <p class="mb-0">The admin hasn't finalized the results for last week's challenge yet. Check back soon!</p>
+        {% endif %}
     </div>
-
+    {% endif %}
     <div class="row">
         <div class="col-md-8">
             <div class="row mb-4">
