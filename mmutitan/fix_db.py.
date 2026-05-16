@@ -1,0 +1,15 @@
+import sqlite3
+
+try:
+    # Connect to your local database
+    conn = sqlite3.connect('instance/mmutitan.db')
+    
+    # Inject the missing column your teammate added
+    conn.execute('ALTER TABLE rsvp ADD COLUMN checked_in BOOLEAN DEFAULT 0;')
+    conn.commit()
+    
+    print("✅ SUCCESS: The 'checked_in' column has been added! Your database is now perfect.")
+except sqlite3.OperationalError as e:
+    print(f"⚠️ Notice: {e} (This usually means the column is already there!)")
+finally:
+    conn.close()

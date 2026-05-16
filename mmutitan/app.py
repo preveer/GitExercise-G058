@@ -31,7 +31,27 @@ def create_app():
     @app.route('/')
     def home():
         if current_user.is_authenticated:
-            return render_template('dashboard.html', title='Dashboard')
+            # --- AAHTITIYA'S WEEK 8: MONDAY WINNER ANNOUNCEMENT ---
+            # Python's weekday() returns 0 for Monday, 1 for Tuesday, etc.
+            is_monday = date.today().weekday() == 0
+            recent_closed_challenge = None
+            top_winners = []
+            
+            # If today is Monday, fetch the latest closed challenge and its top 3 verified winners
+            if is_monday:
+                recent_closed_challenge = Challenge.query.filter_by(is_closed=True).order_by(Challenge.deadline.desc()).first()
+                if recent_closed_challenge:
+                    top_winners = Submission.query.filter_by(
+                        challenge_id=recent_closed_challenge.id, 
+                        verified=True
+                    ).limit(3).all()
+
+            return render_template('dashboard.html', 
+                                   title='Dashboard', 
+                                   is_monday=is_monday, 
+                                   recent_challenge=recent_closed_challenge, 
+                                   winners=top_winners)
+            
         return render_template('home.html')
 
     @app.route('/register', methods=['GET', 'POST'])
@@ -417,7 +437,6 @@ def create_app():
     @app.route('/challenges')
     @login_required
     def student_challenges():
-        # Get all challenges, ordering by newest deadline first
         challenges = Challenge.query.order_by(Challenge.deadline.desc()).all()
         return render_template('student_challenges.html', title='Weekly Challenges', challenges=challenges)
 
@@ -426,43 +445,32 @@ def create_app():
     def challenge_detail(challenge_id):
         challenge = Challenge.query.get_or_404(challenge_id)
         
-        # 1. Check if the current user has already submitted
         existing_submission = Submission.query.filter_by(user_id=current_user.id, challenge_id=challenge.id).first()
-        
-        # 2. Grab all submissions for this challenge to show on the live leaderboard
         submissions = Submission.query.filter_by(challenge_id=challenge.id).order_by(Submission.submitted_at.desc()).all()
 
-        # 3. Handle the form submission when a student uploads proof
         if request.method == 'POST':
-            # Security Check 1: Is the challenge closed?
             if challenge.is_closed:
                 flash('This challenge is closed to new submissions.', 'danger')
                 return redirect(url_for('challenge_detail', challenge_id=challenge.id))
 
-            # Security Check 2: Did they already submit?
             if existing_submission:
                 flash('You have already submitted your attempt for this challenge!', 'warning')
                 return redirect(url_for('challenge_detail', challenge_id=challenge.id))
 
-            # Grab the data from the HTML form
             result_text = request.form.get('result')
             proof_file = request.files.get('proof_file')
 
             if result_text and proof_file and proof_file.filename != '':
-                # Create a safe, random file name for the picture
                 random_hex = secrets.token_hex(8)
                 _, f_ext = os.path.splitext(proof_file.filename)
                 file_fn = random_hex + f_ext
                 
-                # Make sure the 'static/uploads' folder exists on your Mac
                 uploads_dir = os.path.join(app.root_path, 'static/uploads')
                 os.makedirs(uploads_dir, exist_ok=True)
                 
-                # Save the picture to the folder
                 file_path = os.path.join(uploads_dir, file_fn)
                 proof_file.save(file_path)
 
-                # Save the submission data to the database
                 new_submission = Submission(
                     user_id=current_user.id,
                     challenge_id=challenge.id,
