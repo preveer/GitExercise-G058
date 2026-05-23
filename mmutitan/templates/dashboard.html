@@ -1,57 +1,68 @@
 {% extends "base.html" %}
 {% block content %}
-<div class="container mt-4">
-    <div class="alert alert-warning border-0 shadow-sm p-4 mb-4" role="alert">
-        <h4 class="alert-heading fw-bold">🏆 Weekly Titan Shoutout!</h4>
-        <p class="mb-0">Congratulations to <strong>Team FCI</strong> for dominating the leaderboard last week! Keep moving, Titans!</p>
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h2 class="fw-bold mb-0">Hey, {{ current_user.name.split()[0] }} 👋</h2>
+        <p class="text-muted small mb-0">Here's your activity overview</p>
     </div>
+    <span class="badge bg-secondary px-3 py-2">{{ current_user.faculty }}</span>
+</div>
 
-    <div class="row">
-        <div class="col-md-8">
-            <div class="row mb-4">
-                <div class="col-md-6">
-                    <div class="card border-0 shadow-sm bg-dark text-white p-4">
-                        <h5 class="text-uppercase small fw-bold">Daily Streak</h5>
-                        <h1 class="display-4 fw-bold mb-0">🔥 5</h1>
-                        <p class="mb-0 small">Days strong! Don't break it.</p>
-                    </div>
-                </div>
-                <div class="col-md-6">
-                    <div class="card border-0 shadow-sm bg-danger text-white p-4">
-                        <h5 class="text-uppercase small fw-bold">Leaderboard Rank</h5>
-                        <h1 class="display-4 fw-bold mb-0">#12</h1>
-                        <p class="mb-0 small">Top 15% of MMU students.</p>
-                    </div>
-                </div>
-            </div>
-
-            <div class="card border-0 shadow-sm p-4 mb-4">
-                <h5 class="fw-bold mb-3">Today's Progress</h5>
-                <div class="progress" style="height: 25px;">
-                    <div class="progress-bar bg-success" role="progressbar" style="width: 60%;" aria-valuenow="60" aria-valuemin="0" aria-valuemax="100">60% Complete</div>
-                </div>
-                <p class="mt-2 text-muted small">Complete 2 more tasks to hit your daily goal!</p>
-            </div>
-
-            <div class="card border-0 shadow-sm p-4">
-                <h5 class="fw-bold mb-3">Recent Campus Activity</h5>
-                <ul class="list-group list-group-flush">
-                    <li class="list-group-item px-0">👟 <strong>Preveer</strong> just completed a 5km run at the MMU Track.</li>
-                    <li class="list-group-item px-0">🏸 <strong>Aahtitiya</strong> is looking for a Badminton buddy at MPH.</li>
-                    <li class="list-group-item px-0">🔥 <strong>Luthra</strong> just hit a 5-day streak!</li>
-                </ul>
-            </div>
+<!-- Stat row -->
+<div class="row g-3 mb-4">
+    <div class="col-6 col-md-3">
+        <div class="card stat-card" style="background:linear-gradient(135deg,#1a73e8,#0d47a1);">
+            <div class="stat-number">{{ current_user.points }}</div>
+            <div class="stat-label">Total Points</div>
         </div>
-
-        <div class="col-md-4">
-            <div class="card border-0 shadow-sm p-4 bg-white mb-4">
-                <h5 class="fw-bold">Total Points</h5>
-                <h2 class="text-danger fw-bold">1,250 <small class="text-muted fs-6">pts</small></h2>
-                <hr>
-                <a href="{{ url_for('list_events') }}" class="btn btn-outline-dark w-100 mb-2">Find Buddy</a>
-                <a href="{{ url_for('profile') }}" class="btn btn-dark w-100">View My Badges</a>
-            </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="card stat-card" style="background:linear-gradient(135deg,#e63946,#9b1b30);">
+            <div class="stat-number">🔥 {{ current_user.streak }}</div>
+            <div class="stat-label">Day Streak</div>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="card stat-card" style="background:linear-gradient(135deg,#2d9e6b,#1a5c3f);">
+            <div class="stat-number">{{ current_user.badges|length }}</div>
+            <div class="stat-label">Badges Earned</div>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="card stat-card" style="background:linear-gradient(135deg,#f4a62a,#b87100);">
+            <div class="stat-number">{{ current_user.tasks|selectattr('status','equalto','Completed')|list|length }}</div>
+            <div class="stat-label">Tasks Completed</div>
         </div>
     </div>
 </div>
+
+<!-- Quick links -->
+<div class="row g-3">
+    <div class="col-md-4">
+        <div class="card h-100 p-4">
+            <div class="mb-3" style="font-size:1.8rem;">⚡</div>
+            <h5 class="fw-bold">Daily Quests</h5>
+            <p class="text-muted small">3 personalised tasks waiting for you today.</p>
+            <a href="{{ url_for('daily_tasks') }}" class="btn btn-dark btn-sm mt-auto">Go to Quests</a>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card h-100 p-4">
+            <div class="mb-3" style="font-size:1.8rem;">🏆</div>
+            <h5 class="fw-bold">Weekly Challenges</h5>
+            <p class="text-muted small">Submit your results and compete for top spots.</p>
+            <a href="{{ url_for('student_challenges') }}" class="btn btn-dark btn-sm mt-auto">View Challenges</a>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card h-100 p-4">
+            <div class="mb-3" style="font-size:1.8rem;">📅</div>
+            <h5 class="fw-bold">Campus Events</h5>
+            <p class="text-muted small">Find sporting events and RSVP to earn bonus points.</p>
+            <a href="{{ url_for('list_events') }}" class="btn btn-dark btn-sm mt-auto">Browse Events</a>
+        </div>
+    </div>
+</div>
+
 {% endblock %}

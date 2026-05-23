@@ -1,58 +1,83 @@
 {% extends "base.html" %}
 {% block content %}
-<div class="container mt-4">
-    <h2 class="fw-bold mb-4">Campus Sporting Events</h2>
-    <div class="row">
-        {% for event in events %}
-        <div class="col-md-4 mb-4">
-            <div class="card h-100 border-0 shadow-sm">
-                <div class="card-body">
-                    <span class="badge bg-danger mb-2">{{ event.sport_type }}</span>
-                    <h5 class="card-title fw-bold">{{ event.name }}</h5>
-                    <p class="card-text text-muted">
-                        <i class="bi bi-geo-alt"></i> {{ event.venue }}<br>
-                        <i class="bi bi-calendar"></i> {{ event.date }} at {{ event.time }}<br>
-                        
-                        {% if spots_left[event.id] > 0 %}
-                            Spots Left: <span class="fw-bold text-success">{{ spots_left[event.id] }}</span>
-                        {% else %}
-                            <span class="fw-bold text-danger">FULL</span>
-                        {% endif %}
-                    </p>
-                    
-                    {% set my_rsvp = user_rsvps.get(event.id) %}
-                    
-                    {% if my_rsvp %}
-                        {% if my_rsvp.waitlisted %}
-                            <div class="alert alert-warning py-2 small text-center">You are on the Waitlist</div>
-                            <form action="{{ url_for('cancel_rsvp', event_id=event.id) }}" method="POST">
-                                <button type="submit" class="btn btn-outline-danger w-100">Leave Waitlist</button>
-                            </form>
-                        {% elif my_rsvp.checked_in %}
-                            <div class="alert alert-success py-2 small text-center">✓ Checked In</div>
-                        {% else %}
-                            <form action="{{ url_for('checkin', event_id=event.id) }}" method="POST" class="mb-2">
-                                <button type="submit" class="btn btn-primary w-100">Check In</button>
-                            </form>
-                            <form action="{{ url_for('cancel_rsvp', event_id=event.id) }}" method="POST">
-                                <button type="submit" class="btn btn-outline-danger w-100">Cancel RSVP</button>
-                            </form>
-                        {% endif %}
-                    
-                    {% elif spots_left[event.id] <= 0 %}
-                        <form action="{{ url_for('rsvp', event_id=event.id) }}" method="POST">
-                            <button type="submit" class="btn btn-warning w-100">Join Waitlist</button>
-                        </form>
+
+<div class="mb-4">
+    <h2 class="fw-bold mb-0">Campus Sporting Events</h2>
+    <p class="text-muted small">RSVP to events and earn bonus check-in points</p>
+</div>
+
+<div class="row g-3">
+    {% for event in events %}
+    <div class="col-md-4">
+        <div class="card h-100">
+            <div class="card-body">
+                <span class="badge bg-danger mb-2">{{ event.sport_type }}</span>
+                <h5 class="fw-bold mt-1 mb-1">{{ event.name }}</h5>
+
+                <p class="text-muted small mb-2">
+                    <i class="fa fa-map-marker-alt me-1"></i>{{ event.venue }}
+                </p>
+                <p class="text-muted small mb-3">
+                    <i class="fa fa-calendar me-1"></i>{{ event.date }} at {{ event.time }}
+                </p>
+
+                {% if spots_left[event.id] > 0 %}
+                <p class="small mb-3">
+                    Spots left: <span class="fw-bold text-success">{{ spots_left[event.id] }}</span>
+                    / {{ event.max_capacity }}
+                </p>
+                {% else %}
+                <p class="small text-danger fw-bold mb-3">Event Full</p>
+                {% endif %}
+            </div>
+
+            <div class="card-footer bg-white border-0 pb-3">
+                {% set my_rsvp = user_rsvps.get(event.id) %}
+
+                {% if my_rsvp %}
+                    {% if my_rsvp.waitlisted %}
+                    <div class="alert alert-warning py-1 small text-center mb-2">You are on the Waitlist</div>
+                    <form action="{{ url_for('cancel_rsvp', event_id=event.id) }}" method="POST">
+                        <button type="submit" class="btn btn-outline-danger w-100 btn-sm">Leave Waitlist</button>
+                    </form>
+                    {% elif my_rsvp.checked_in %}
+                    <button class="btn btn-success w-100 btn-sm" disabled>
+                        <i class="fa fa-check-circle me-1"></i>Checked In
+                    </button>
                     {% else %}
-                        <form action="{{ url_for('rsvp', event_id=event.id) }}" method="POST">
-                            <button type="submit" class="btn btn-success w-100">RSVP Now</button>
-                        </form>
+                    <form action="{{ url_for('checkin', event_id=event.id) }}" method="POST" class="mb-2">
+                        <button type="submit" class="btn btn-primary w-100 btn-sm">
+                            <i class="fa fa-sign-in-alt me-1"></i>Check In
+                        </button>
+                    </form>
+                    <form action="{{ url_for('cancel_rsvp', event_id=event.id) }}" method="POST">
+                        <button type="submit" class="btn btn-outline-danger w-100 btn-sm">Cancel RSVP</button>
+                    </form>
                     {% endif %}
-                    
-                </div>
+
+                {% elif spots_left[event.id] <= 0 %}
+                <form action="{{ url_for('rsvp', event_id=event.id) }}" method="POST">
+                    <button type="submit" class="btn btn-warning w-100 btn-sm fw-bold">
+                        <i class="fa fa-list me-1"></i>Join Waitlist
+                    </button>
+                </form>
+                {% else %}
+                <form action="{{ url_for('rsvp', event_id=event.id) }}" method="POST">
+                    <button type="submit" class="btn btn-success w-100 btn-sm fw-bold">
+                        <i class="fa fa-calendar-check me-1"></i>RSVP Now
+                    </button>
+                </form>
+                {% endif %}
             </div>
         </div>
-        {% endfor %}
     </div>
+    {% else %}
+    <div class="col-12 text-center mt-5">
+        <div style="font-size:3rem;">📅</div>
+        <h4 class="text-muted mt-2">No events scheduled yet.</h4>
+        <p class="text-muted small">Check back soon!</p>
+    </div>
+    {% endfor %}
 </div>
+
 {% endblock %}

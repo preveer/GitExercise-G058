@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 {% block content %}
+<<<<<<< Updated upstream
 <div class="container mt-4">
     <h2 class="fw-bold mb-4">Admin Control Panel</h2>
     
@@ -77,7 +78,107 @@
                     <button class="btn btn-secondary w-100" disabled>Coming Soon</button>
                 </div>
             </div>
+=======
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h2 class="fw-bold mb-0">Admin Control Panel</h2>
+        <p class="text-muted small mb-0">Manage users, tasks, events and challenges</p>
+    </div>
+    <span class="badge bg-warning text-dark px-3 py-2">
+        <i class="fa fa-shield-alt me-1"></i>Admin
+    </span>
+</div>
+
+<!-- Stats row -->
+<div class="row g-3 mb-5">
+    <div class="col-6 col-md-3">
+        <div class="card stat-card" style="background:linear-gradient(135deg,#1a73e8,#0d47a1);">
+            <div class="stat-number">{{ total_users }}</div>
+            <div class="stat-label">Total Users</div>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="card stat-card" style="background:linear-gradient(135deg,#2d9e6b,#1a5c3f);">
+            <div class="stat-number">{{ total_tasks }}</div>
+            <div class="stat-label">Tasks in Pool</div>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="card stat-card" style="background:linear-gradient(135deg,#f4a62a,#b87100);">
+            <div class="stat-number">{{ total_events }}</div>
+            <div class="stat-label">Upcoming Events</div>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="card stat-card" style="background:linear-gradient(135deg,#e63946,#9b1b30);">
+            <div class="stat-number">{{ pending_submissions }}</div>
+            <div class="stat-label">Pending Reviews</div>
         </div>
     </div>
 </div>
+
+<!-- Management modules -->
+<h5 class="fw-bold mb-3">Management Modules</h5>
+<div class="row g-3 mb-5">
+    <div class="col-md-4">
+        <div class="card p-4 h-100">
+            <div class="mb-2" style="font-size:1.6rem;">👥</div>
+            <h6 class="fw-bold">User Management</h6>
+            <p class="text-muted small">View accounts, ban rule-breakers, delete users.</p>
+            <a href="{{ url_for('admin_users') }}" class="btn btn-dark btn-sm mt-auto">Manage Users</a>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card p-4 h-100">
+            <div class="mb-2" style="font-size:1.6rem;">⚡</div>
+            <h6 class="fw-bold">Task Pool</h6>
+            <p class="text-muted small">Create, edit or delete the daily quests assigned to students.</p>
+            <a href="{{ url_for('admin_tasks') }}" class="btn btn-dark btn-sm mt-auto">Manage Tasks</a>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card p-4 h-100">
+            <div class="mb-2" style="font-size:1.6rem;">📅</div>
+            <h6 class="fw-bold">Events</h6>
+            <p class="text-muted small">Schedule events, set capacity, and track RSVPs.</p>
+            <a href="{{ url_for('manage_events') }}" class="btn btn-dark btn-sm mt-auto">Manage Events</a>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card p-4 h-100">
+            <div class="mb-2" style="font-size:1.6rem;">🏆</div>
+            <h6 class="fw-bold">Weekly Challenges</h6>
+            <p class="text-muted small">Verify submissions and award points.</p>
+            <a href="{{ url_for('admin_challenges') }}" class="btn btn-dark btn-sm mt-auto">Manage Challenges</a>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card p-4 h-100">
+            <div class="mb-2" style="font-size:1.6rem;">🎖️</div>
+            <h6 class="fw-bold">Badges</h6>
+            <p class="text-muted small">Create achievement badges for students to unlock.</p>
+            <a href="{{ url_for('admin_badges') }}" class="btn btn-outline-danger btn-sm mt-auto">Manage Badges</a>
+>>>>>>> Stashed changes
+        </div>
+    </div>
+</div>
+
+<!-- Danger zone -->
+<h5 class="fw-bold text-danger mb-3">Danger Zone</h5>
+<div class="card border-danger">
+    <div class="card-body d-flex justify-content-between align-items-center">
+        <div>
+            <h6 class="fw-bold text-danger mb-1">Reset Season</h6>
+            <p class="text-muted small mb-0">Resets ALL student points and streaks to zero. This cannot be undone.</p>
+        </div>
+        <form action="{{ url_for('reset_season') }}" method="POST"
+              onsubmit="return confirm('CRITICAL: Are you 100% sure you want to reset the leaderboard?');">
+            <button type="submit" class="btn btn-danger fw-bold">
+                <i class="fa fa-exclamation-triangle me-1"></i>Reset All Points
+            </button>
+        </form>
+    </div>
+</div>
+
 {% endblock %}

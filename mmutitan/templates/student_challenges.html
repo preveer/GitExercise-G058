@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% block content %}
+
+<div class="text-center mb-5">
+    <h1 class="fw-bold">Weekly Sport Challenges</h1>
+    <p class="text-muted">Compete against fellow Titans — submit proof and earn 50 points!</p>
+</div>
+
+<div class="row g-3">
+    {% if challenges %}
+    {% for challenge in challenges %}
+    <div class="col-md-4">
+        <div class="card h-100">
+            <div class="card-body">
+                <div class="d-flex gap-2 mb-2">
+                    {% if challenge.is_closed %}
+                    <span class="badge bg-danger">Closed</span>
+                    {% else %}
+                    <span class="badge bg-success">Active</span>
+                    {% endif %}
+                    <span class="badge bg-info text-dark">{{ challenge.sport_category }}</span>
+                </div>
+                <h5 class="fw-bold mt-1">{{ challenge.title }}</h5>
+                <p class="text-muted small mb-3">{{ challenge.description[:100] }}...</p>
+                <p class="small mb-1"><strong>Deadline:</strong> {{ challenge.deadline.strftime('%b %d, %Y') }}</p>
+                <p class="small mb-0"><strong>Scoring:</strong> {{ challenge.scoring_criteria }}</p>
+            </div>
+            <div class="card-footer bg-white border-0 pb-3">
+                <a href="{{ url_for('challenge_detail', challenge_id=challenge.id) }}"
+                   class="btn btn-primary w-100 btn-sm fw-bold">
+                    View Challenge →
+                </a>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+    {% else %}
+    <div class="col-12 text-center py-5">
+        <div style="font-size:3rem;">🏋️</div>
+        <h4 class="text-muted mt-2">No challenges available right now.</h4>
+        <p class="text-muted small">Check back later!</p>
+    </div>
+    {% endif %}
+</div>
+
+{% endblock %}
