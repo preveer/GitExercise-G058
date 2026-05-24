@@ -1,64 +1,68 @@
 {% extends "base.html" %}
 {% block content %}
-<div class="container mt-5">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <h2>Manage Weekly Challenges</h2>
-        <!-- Button to go to the Create form -->
-        <a href="{{ url_for('add_challenge') }}" class="btn btn-primary fw-bold">+ Create Challenge</a>
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h2 class="fw-bold mb-0">Weekly Challenges</h2>
+        <p class="text-muted small mb-0">{{ challenges|length }} challenges created</p>
     </div>
+    <a href="{{ url_for('add_challenge') }}" class="btn btn-primary fw-bold">
+        <i class="fa fa-plus me-1"></i>Create Challenge
+    </a>
+</div>
 
-    <div class="card shadow-sm">
-        <div class="card-body">
-            {% if challenges %}
-            <table class="table table-hover mb-0">
-                <thead class="table-dark">
-                    <tr>
-                        <th>Title</th>
-                        <th>Sport Category</th>
-                        <th>Deadline</th>
-                        <th>Status</th>
-                        <th>Actions</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <!-- This loops through every challenge in the database -->
-                    {% for challenge in challenges %}
-                    <tr>
-                        <td class="fw-bold">{{ challenge.title }}</td>
-                        <td>{{ challenge.sport_category }}</td>
-                        <td>{{ challenge.deadline.strftime('%Y-%m-%d %I:%M %p') }}</td>
-                        <td>
-                            <!-- Show a red badge if closed, green if active -->
-                            {% if challenge.is_closed %}
-                            <span class="badge bg-danger">Closed</span>
-                            {% else %}
-                            <span class="badge bg-success">Active</span>
-                            {% endif %}
-                        </td>
-                        <td>
-                            <!-- Action Buttons -->
-                            <a href="{{ url_for('view_submissions', challenge_id=challenge.id) }}" class="btn btn-sm btn-info text-white">Submissions</a>
-                            <a href="{{ url_for('edit_challenge', challenge_id=challenge.id) }}" class="btn btn-sm btn-warning text-dark">Edit</a>
-                            
-                            {% if not challenge.is_closed %}
-                            <form action="{{ url_for('close_challenge', challenge_id=challenge.id) }}" method="POST" class="d-inline">
-                                <button type="submit" class="btn btn-sm btn-secondary" onclick="return confirm('Are you sure you want to close this challenge early?');">Close</button>
-                            </form>
-                            {% endif %}
-
-                            <form action="{{ url_for('delete_challenge', challenge_id=challenge.id) }}" method="POST" class="d-inline">
-                                <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('Are you sure you want to delete this challenge permanently?');">Delete</button>
-                            </form>
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-            {% else %}
-            <!-- If the database is empty, show this message -->
-            <p class="text-muted text-center mb-0 my-4">No challenges created yet. Click the button above to start!</p>
-            {% endif %}
-        </div>
+<div class="card shadow-sm">
+    <div class="card-body p-0">
+        {% if challenges %}
+        <table class="table table-hover mb-0">
+            <thead class="table-dark">
+                <tr>
+                    <th>Title</th>
+                    <th>Sport</th>
+                    <th>Deadline</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for challenge in challenges %}
+                <tr>
+                    <td class="fw-semibold">{{ challenge.title }}</td>
+                    <td><span class="badge bg-secondary">{{ challenge.sport_category }}</span></td>
+                    <td class="small text-muted">{{ challenge.deadline.strftime('%Y-%m-%d %I:%M %p') }}</td>
+                    <td>
+                        {% if challenge.is_closed %}
+                        <span class="badge bg-danger">Closed</span>
+                        {% else %}
+                        <span class="badge bg-success">Active</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <a href="{{ url_for('view_submissions', challenge_id=challenge.id) }}"
+                           class="btn btn-sm btn-info text-white">Submissions</a>
+                        <a href="{{ url_for('edit_challenge', challenge_id=challenge.id) }}"
+                           class="btn btn-sm btn-warning text-dark">Edit</a>
+                        {% if not challenge.is_closed %}
+                        <form action="{{ url_for('close_challenge', challenge_id=challenge.id) }}"
+                              method="POST" class="d-inline">
+                            <button type="submit" class="btn btn-sm btn-secondary"
+                                    onclick="return confirm('Close this challenge early?');">Close</button>
+                        </form>
+                        {% endif %}
+                        <form action="{{ url_for('delete_challenge', challenge_id=challenge.id) }}"
+                              method="POST" class="d-inline">
+                            <button type="submit" class="btn btn-sm btn-danger"
+                                    onclick="return confirm('Permanently delete this challenge?');">Delete</button>
+                        </form>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <p class="text-muted text-center py-5">No challenges yet. Create one above!</p>
+        {% endif %}
     </div>
 </div>
+
 {% endblock %}

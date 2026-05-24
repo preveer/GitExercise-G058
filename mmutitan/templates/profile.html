@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 {% block content %}
+<<<<<<< Updated upstream
 <div class="container mt-5">
     <div class="row">
         <div class="col-md-4">
@@ -63,9 +64,96 @@
                             {% endfor %}
                         </tbody>
                     </table>
+=======
+<div class="row g-4">
+
+    <!-- Left column: profile card -->
+    <div class="col-md-4">
+        <div class="card text-center p-4 mb-3">
+            <img src="{{ url_for('static', filename='profile_pics/' + user.profile_photo) }}"
+                 class="rounded-circle mx-auto mb-3"
+                 style="width:110px;height:110px;object-fit:cover;border:3px solid #e63946;">
+            <h4 class="fw-bold mb-0">{{ user.name }}</h4>
+            <p class="text-muted small mb-3">{{ user.faculty }}</p>
+
+            <div class="d-flex justify-content-center gap-2 flex-wrap mb-3">
+                <span class="badge bg-danger px-3 py-2">⭐ {{ user.points }} pts</span>
+                <span class="badge bg-warning text-dark px-3 py-2">🔥 {{ user.streak }} day streak</span>
+            </div>
+
+            {% if user.sport_preferences %}
+            <p class="text-muted small mb-3">
+                <i class="fa fa-running me-1"></i> {{ user.sport_preferences }}
+            </p>
+            {% endif %}
+
+            <div class="d-grid gap-2">
+                <a href="{{ url_for('edit_profile') }}" class="btn btn-outline-dark btn-sm">
+                    <i class="fa fa-edit me-1"></i>Edit Profile
+                </a>
+                <a href="{{ url_for('change_password') }}" class="btn btn-outline-secondary btn-sm">
+                    <i class="fa fa-lock me-1"></i>Change Password
+                </a>
+            </div>
+        </div>
+
+        <!-- Badges preview -->
+        <div class="card p-4">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h6 class="fw-bold mb-0">Achievements</h6>
+                <a href="{{ url_for('my_badges') }}" class="small text-danger text-decoration-none fw-semibold">View all</a>
+            </div>
+            {% if user.badges %}
+            <div class="row g-2">
+                {% for badge in user.badges[:6] %}
+                <div class="col-4 text-center">
+                    <img src="{{ url_for('static', filename='profile_pics/default_badge.png') }}"
+                         class="img-fluid mb-1" style="width:36px;" title="{{ badge.title }}">
+                    <p class="small mb-0 text-truncate" style="font-size:0.65rem;">{{ badge.title }}</p>
+>>>>>>> Stashed changes
                 </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <p class="text-muted small text-center mb-0">No badges yet. Start completing quests!</p>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Right column: points history -->
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header bg-white py-3 border-bottom">
+                <h5 class="fw-bold mb-0"><i class="fa fa-history me-2 text-muted"></i>Points History</h5>
+            </div>
+            <div class="card-body p-0">
+                <table class="table table-hover mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Source</th>
+                            <th class="text-center">Points</th>
+                            <th class="text-end">Date</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for log in user.points_history | reverse %}
+                        <tr>
+                            <td class="fw-semibold">{{ log.source }}</td>
+                            <td class="text-center"><span class="badge bg-success">+{{ log.amount }}</span></td>
+                            <td class="text-end text-muted small">{{ log.awarded_at.strftime('%d %b %Y') }}</td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="3" class="text-center text-muted py-4">
+                                No points earned yet. Complete your first quest!
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
             </div>
         </div>
     </div>
+
 </div>
 {% endblock %}

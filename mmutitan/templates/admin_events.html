@@ -1,70 +1,90 @@
 {% extends "base.html" %}
 {% block content %}
-<div class="container mt-4">
-    <h2 class="fw-bold mb-4">Event Management</h2>
-    
-    <div class="card shadow-sm border-0 mb-5">
-        <div class="card-body p-4">
-            <h5 class="card-title mb-4">Create New Event</h5>
-            <form method="POST">
-                {{ form.hidden_tag() }}
-                <div class="row">
-                    <div class="col-md-6 mb-3">
-                        {{ form.name.label(class="form-label") }}
+
+<div class="mb-4">
+    <h2 class="fw-bold mb-0">Event Management</h2>
+    <p class="text-muted small">Create and manage campus sporting events</p>
+</div>
+
+<div class="row g-4">
+    <!-- Create form -->
+    <div class="col-md-5">
+        <div class="card shadow-sm">
+            <div class="card-header bg-dark text-white py-3">
+                <h5 class="mb-0 fw-bold">Create New Event</h5>
+            </div>
+            <div class="card-body p-4">
+                <form method="POST">
+                    {{ form.hidden_tag() }}
+
+                    <div class="mb-3">
+                        {{ form.name.label }}
                         {{ form.name(class="form-control") }}
                     </div>
-                    <div class="col-md-6 mb-3">
-                        {{ form.venue.label(class="form-label") }}
+                    <div class="mb-3">
+                        {{ form.venue.label }}
                         {{ form.venue(class="form-control") }}
                     </div>
-                </div>
-                <div class="row">
-                    <div class="col-md-4 mb-3">
-                        {{ form.sport_type.label(class="form-label") }}
+                    <div class="mb-3">
+                        {{ form.sport_type.label }}
                         {{ form.sport_type(class="form-control") }}
                     </div>
-                    <div class="col-md-4 mb-3">
-                        {{ form.date.label(class="form-label") }}
-                        {{ form.date(class="form-control", type="date") }}
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            {{ form.date.label }}
+                            {{ form.date(class="form-control", type="date") }}
+                        </div>
+                        <div class="col-md-6">
+                            {{ form.time.label }}
+                            {{ form.time(class="form-control", type="time") }}
+                        </div>
                     </div>
-                    <div class="col-md-4 mb-3">
-                        {{ form.time.label(class="form-label") }}
-                        {{ form.time(class="form-control", type="time") }}
+                    <div class="mb-4">
+                        {{ form.max_capacity.label }}
+                        {{ form.max_capacity(class="form-control") }}
                     </div>
-                </div>
-                <div class="mb-3">
-                    {{ form.max_capacity.label(class="form-label") }}
-                    {{ form.max_capacity(class="form-control") }}
-                </div>
-                {{ form.submit(class="btn btn-dark w-100") }}
-            </form>
+                    {{ form.submit(class="btn btn-dark w-100 fw-bold") }}
+                </form>
+            </div>
         </div>
     </div>
 
-    <h3 class="fw-bold mb-3">Scheduled Events</h3>
-    <div class="table-responsive">
-        <table class="table table-hover bg-white rounded shadow-sm">
-            <thead class="table-dark">
-                <tr>
-                    <th>Event Name</th>
-                    <th>Venue</th>
-                    <th>Sport</th>
-                    <th>Date/Time</th>
-                    <th>Capacity</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for event in events %}
-                <tr>
-                    <td>{{ event.name }}</td>
-                    <td>{{ event.venue }}</td>
-                    <td>{{ event.sport_type }}</td>
-                    <td>{{ event.date }} at {{ event.time }}</td>
-                    <td>{{ event.max_capacity }}</td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
+    <!-- Event list -->
+    <div class="col-md-7">
+        <div class="card shadow-sm">
+            <div class="card-header bg-white border-bottom py-3">
+                <h5 class="mb-0 fw-bold">Scheduled Events</h5>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Event</th>
+                            <th>Venue</th>
+                            <th>Sport</th>
+                            <th>Date / Time</th>
+                            <th>Cap.</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for event in events %}
+                        <tr>
+                            <td class="fw-semibold">{{ event.name }}</td>
+                            <td class="text-muted small">{{ event.venue }}</td>
+                            <td><span class="badge bg-secondary">{{ event.sport_type }}</span></td>
+                            <td class="small">{{ event.date }}<br>{{ event.time }}</td>
+                            <td>{{ event.max_capacity }}</td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="5" class="text-center py-4 text-muted">No events yet.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
     </div>
 </div>
+
 {% endblock %}

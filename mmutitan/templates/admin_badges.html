@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 {% block content %}
+<<<<<<< HEAD
 <div class="container mt-4">
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h2>Manage Badges</h2>
@@ -42,4 +43,56 @@
         </div>
     </div>
 </div>
+=======
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h2 class="fw-bold mb-0">Manage Badges</h2>
+        <p class="text-muted small mb-0">{{ badges|length }} badges created</p>
+    </div>
+    <a href="{{ url_for('add_badge') }}" class="btn btn-danger">
+        <i class="fa fa-plus me-1"></i>Create Badge
+    </a>
+</div>
+
+<div class="card shadow-sm">
+    <div class="card-body p-0">
+        <table class="table table-hover mb-0">
+            <thead class="table-dark">
+                <tr>
+                    <th>ID</th>
+                    <th>Title</th>
+                    <th>Category</th>
+                    <th>Description</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for badge in badges %}
+                <tr>
+                    <td class="text-muted small">{{ badge.id }}</td>
+                    <td class="fw-bold text-primary">{{ badge.title }}</td>
+                    <td><span class="badge bg-secondary">{{ badge.category }}</span></td>
+                    <td class="text-muted small">{{ badge.description }}</td>
+                    <td>
+                        <a href="{{ url_for('edit_badge', badge_id=badge.id) }}"
+                           class="btn btn-sm btn-outline-dark">Edit</a>
+                        <form action="{{ url_for('delete_badge', badge_id=badge.id) }}"
+                              method="POST" class="d-inline">
+                            <button type="submit" class="btn btn-sm btn-outline-danger"
+                                    onclick="return confirm('Delete this badge?');">Delete</button>
+                        </form>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="5" class="text-center py-4 text-muted">No badges yet.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+>>>>>>> 20dad4a3c0c1ca46e42405a89c3f9f083b1d0552
 {% endblock %}
