@@ -1,0 +1,190 @@
+{% extends "base.html" %}
+{% block content %}
+
+<div class="mb-4">
+    <h2 class="fw-bold mb-0">Sport Buddy Finder</h2>
+    <p class="text-muted small">Set your availability and find students to play sports with on campus</p>
+</div>
+
+<div class="row g-4">
+
+    <!-- Left: Availability settings -->
+    <div class="col-md-4">
+        <div class="card shadow-sm">
+            <div class="card-header bg-dark text-white py-3">
+                <h5 class="mb-0 fw-bold"><i class="fa fa-calendar-check me-2"></i>My Availability</h5>
+            </div>
+            <div class="card-body p-4">
+                <form method="POST" action="">
+                    {{ form.hidden_tag() }}
+
+                    <div class="mb-3">
+                        {{ form.availability_days.label(class="form-label fw-bold") }}
+                        <div class="d-flex flex-wrap gap-2 mt-1">
+                            {% for value, label in form.availability_days.choices %}
+                            <div class="form-check form-check-inline">
+                                <input class="form-check-input" type="checkbox"
+                                       name="availability_days"
+                                       id="day_{{ value }}"
+                                       value="{{ value }}"
+                                       {% if value in (form.availability_days.data or []) %}checked{% endif %}>
+                                <label class="form-check-label small" for="day_{{ value }}">{{ label }}</label>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+
+                    <div class="mb-4">
+                        {{ form.availability_time.label(class="form-label fw-bold") }}
+                        {{ form.availability_time(class="form-select") }}
+                    </div>
+
+                    <div class="d-grid">
+                        {{ form.submit(class="btn btn-danger fw-bold") }}
+                    </div>
+                </form>
+
+                {% if current_user.availability_days %}
+                <hr>
+                <p class="small text-muted mb-1"><strong>Your saved days:</strong>
+                    {{ current_user.availability_days.replace(',', ', ') }}</p>
+                <p class="small text-muted mb-0"><strong>Preferred time:</strong>
+                    {{ current_user.availability_time or 'Not set' }}</p>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Pending incoming requests -->
+        {% if pending_requests %}
+        <div class="card shadow-sm mt-4">
+            <div class="card-header bg-warning text-dark py-3">
+                <h6 class="mb-0 fw-bold">
+                    <i class="fa fa-bell me-1"></i>Pending Requests
+                    <span class="badge bg-dark ms-1">{{ pending_requests|length }}</span>
+                </h6>
+            </div>
+            <div class="card-body p-0">
+                {% for req in pending_requests %}
+                <div class="p-3 border-bottom">
+                    <p class="fw-semibold mb-1">{{ req.sender.name }}</p>
+                    <p class="small text-muted mb-2">{{ req.sender.faculty }} &middot; {{ req.sender.sport_preferences }}</p>
+                    <div class="d-flex gap-2">
+                        <form action="{{ url_for('respond_buddy_request', request_id=req.id, action='accept') }}" method="POST">
+                            <button type="submit" class="btn btn-success btn-sm fw-bold">Accept</button>
+                        </form>
+                        <form action="{{ url_for('respond_buddy_request', request_id=req.id, action='decline') }}" method="POST">
+                            <button type="submit" class="btn btn-outline-danger btn-sm">Decline</button>
+                        </form>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Confirmed meetups -->
+        {% if confirmed %}
+        <div class="card shadow-sm mt-4">
+            <div class="card-header bg-success text-white py-3">
+                <h6 class="mb-0 fw-bold"><i class="fa fa-check-circle me-1"></i>Confirmed Meetups</h6>
+            </div>
+            <div class="card-body p-0">
+                {% for req in confirmed %}
+                {% if req.sender_id == current_user.id %}
+                    {% set buddy = req.receiver %}
+                {% else %}
+                    {% set buddy = req.sender %}
+                {% endif %}
+                <div class="p-3 border-bottom">
+                    <p class="fw-semibold mb-0">{{ buddy.name }}</p>
+                    <p class="small text-muted mb-0">{{ buddy.faculty }} &middot; {{ buddy.sport_preferences }}</p>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Right: Matches list -->
+    <div class="col-md-8">
+        <div class="card shadow-sm">
+            <div class="card-header bg-white border-bottom py-3">
+                <h5 class="mb-0 fw-bold"><i class="fa fa-users me-2 text-danger"></i>
+                    Students Who Match Your Sport &amp; Availability
+                </h5>
+            </div>
+            <div class="card-body">
+                {% if not current_user.availability_days %}
+                <div class="text-center py-5">
+                    <div style="font-size:3rem;">📅</div>
+                    <h5 class="text-muted mt-2">Set your availability first</h5>
+                    <p class="text-muted small">Fill in the form on the left to start finding buddies.</p>
+                </div>
+
+                {% elif matches %}
+                <div class="row g-3">
+                    {% for match in matches %}
+                    <div class="col-md-6">
+                        <div class="card h-100 border-0 bg-light">
+                            <div class="card-body">
+                                <div class="d-flex align-items-center mb-2">
+                                    <img src="{{ url_for('static', filename='profile_pics/' + match.user.profile_photo) }}"
+                                         class="rounded-circle me-2"
+                                         style="width:40px;height:40px;object-fit:cover;">
+                                    <div>
+                                        <h6 class="fw-bold mb-0">{{ match.user.name }}</h6>
+                                        <small class="text-muted">{{ match.user.faculty }}</small>
+                                    </div>
+                                </div>
+
+                                <p class="small mb-1">
+                                    <i class="fa fa-running me-1 text-danger"></i>
+                                    {{ match.user.sport_preferences }}
+                                </p>
+                                <p class="small mb-1">
+                                    <i class="fa fa-clock me-1 text-muted"></i>
+                                    {{ match.user.availability_time }}
+                                </p>
+                                <p class="small mb-3">
+                                    <i class="fa fa-calendar me-1 text-muted"></i>
+                                    Common days:
+                                    <span class="fw-semibold">{{ match.common_days | join(', ') }}</span>
+                                </p>
+
+                                {% if match.existing_request %}
+                                    {% if match.existing_request.status == 'Pending' %}
+                                    <button class="btn btn-secondary btn-sm w-100" disabled>Request Sent</button>
+                                    {% elif match.existing_request.status == 'Accepted' %}
+                                    <button class="btn btn-success btn-sm w-100" disabled>✓ Matched!</button>
+                                    {% else %}
+                                    <button class="btn btn-outline-secondary btn-sm w-100" disabled>Declined</button>
+                                    {% endif %}
+                                {% else %}
+                                <form action="{{ url_for('send_buddy_request', receiver_id=match.user.id) }}" method="POST">
+                                    <button type="submit" class="btn btn-danger btn-sm w-100 fw-bold">
+                                        <i class="fa fa-paper-plane me-1"></i>Send Meetup Request
+                                    </button>
+                                </form>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+
+                {% else %}
+                <div class="text-center py-5">
+                    <div style="font-size:3rem;">🔍</div>
+                    <h5 class="text-muted mt-2">No matches found yet</h5>
+                    <p class="text-muted small">
+                        No other students share your sport preference and availability right now.
+                        Check back as more students set their availability!
+                    </p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+</div>
+{% endblock %}

@@ -202,6 +202,12 @@
                     <a class="nav-link" href="{{ url_for('profile') }}">
                         <i class="fa fa-user me-1"></i>Profile
                     </a>
+                    <a class="nav-link" href="{{ url_for('buddy_finder') }}">
+                        <i class="fa fa-users me-1"></i>Find Buddy
+                    </a>
+                    <a class="nav-link" href="{{ url_for('submit_feedback') }}">
+                        <i class="fa fa-comment-alt me-1"></i>Feedback
+                    </a>
                     {% if current_user.is_admin %}
                         <a class="nav-link admin-link" href="{{ url_for('admin_dashboard') }}">
                             <i class="fa fa-shield-alt me-1"></i>Admin
@@ -229,6 +235,9 @@
         {% endif %}
     {% endwith %}
 
-    {% block content %}
-    {% endblock content %}
+    {% block content %}{% endblock %}
 </div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

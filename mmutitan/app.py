@@ -8,10 +8,12 @@ from flask_login import login_user, current_user, logout_user, login_required
 from werkzeug.security import generate_password_hash, check_password_hash
 
 from models import (Task, db, login_manager, User, Badge, Event,
-                    RSVP, UserTask, Challenge, Submission, Point)
+                    RSVP, UserTask, Challenge, Submission, Point, Feedback,
+                    BuddyRequest)
 from forms import (BadgeForm, RegistrationForm, LoginForm, EventForm,
                    ChangePasswordForm, UpdateProfileForm, TaskForm, ChallengeForm,
-                   ForgotPasswordForm, ResetPasswordForm)
+                   ForgotPasswordForm, ResetPasswordForm, FeedbackForm,
+                   BuddyAvailabilityForm)
 from config import Config
 
 
@@ -815,6 +817,167 @@ def create_app():
         db.session.commit()
         flash('The season has been reset. All student rankings are now at zero.', 'warning')
         return redirect(url_for('admin_dashboard'))
+
+
+    # ------------------------------------------------------------------ #
+    # FEEDBACK ROUTES (Cards 31 & 32)
+    # ------------------------------------------------------------------ #
+
+    @app.route('/feedback', methods=['GET', 'POST'])
+    @login_required
+    def submit_feedback():
+        form = FeedbackForm()
+        if form.validate_on_submit():
+            new_feedback = Feedback(
+                user_id=current_user.id,
+                submission_type=form.submission_type.data,
+                message=form.message.data
+            )
+            db.session.add(new_feedback)
+            db.session.commit()
+            flash('Thank you! Your feedback has been submitted.', 'success')
+            return redirect(url_for('submit_feedback'))
+        return render_template('feedback.html', title='Feedback', form=form)
+
+    @app.route('/admin/feedback')
+    @login_required
+    def admin_feedback():
+        if not current_user.is_admin:
+            flash('Access Denied.', 'danger')
+            return redirect(url_for('home'))
+        feedbacks = Feedback.query.order_by(Feedback.submitted_at.desc()).all()
+        return render_template('admin_feedback.html', title='Manage Feedback',
+                               feedbacks=feedbacks)
+
+    @app.route('/admin/feedback/<int:feedback_id>/delete', methods=['POST'])
+    @login_required
+    def delete_feedback(feedback_id):
+        if not current_user.is_admin:
+            flash('Access Denied.', 'danger')
+            return redirect(url_for('home'))
+        feedback = Feedback.query.get_or_404(feedback_id)
+        db.session.delete(feedback)
+        db.session.commit()
+        flash('Feedback entry deleted.', 'info')
+        return redirect(url_for('admin_feedback'))
+
+
+    # ------------------------------------------------------------------ #
+    # SPORT BUDDY FINDER ROUTES (Card 30)
+    # ------------------------------------------------------------------ #
+
+    @app.route('/buddy', methods=['GET', 'POST'])
+    @login_required
+    def buddy_finder():
+        form = BuddyAvailabilityForm()
+
+        # Pre-fill form with current saved availability
+        if request.method == 'GET':
+            if current_user.availability_days:
+                form.availability_days.data = current_user.availability_days.split(',')
+            if current_user.availability_time:
+                form.availability_time.data = current_user.availability_time
+
+        if form.validate_on_submit():
+            current_user.availability_days = ','.join(form.availability_days.data)
+            current_user.availability_time = form.availability_time.data
+            db.session.commit()
+            flash('Your availability has been saved!', 'success')
+            return redirect(url_for('buddy_finder'))
+
+        # Find matches — same sport preference AND overlapping availability days
+        matches = []
+        if current_user.availability_days and current_user.sport_preferences:
+            my_days = set(current_user.availability_days.split(','))
+            my_sport = current_user.sport_preferences.lower()
+
+            candidates = User.query.filter(
+                User.id != current_user.id,
+                User.is_banned == False,
+                User.availability_days != None,
+                User.availability_days != '',
+                User.sport_preferences != None,
+                User.sport_preferences != ''
+            ).all()
+
+            for candidate in candidates:
+                # Check sport overlap
+                if my_sport not in candidate.sport_preferences.lower():
+                    continue
+                # Check day overlap
+                their_days = set(candidate.availability_days.split(','))
+                if not my_days.intersection(their_days):
+                    continue
+                # Check if a request already exists between these two
+                existing = BuddyRequest.query.filter(
+                    ((BuddyRequest.sender_id == current_user.id) &
+                     (BuddyRequest.receiver_id == candidate.id)) |
+                    ((BuddyRequest.sender_id == candidate.id) &
+                     (BuddyRequest.receiver_id == current_user.id))
+                ).first()
+                matches.append({
+                    'user': candidate,
+                    'common_days': sorted(my_days.intersection(their_days)),
+                    'existing_request': existing
+                })
+
+        # Get incoming pending requests for the current user
+        pending_requests = BuddyRequest.query.filter_by(
+            receiver_id=current_user.id, status='Pending'
+        ).all()
+
+        # Get confirmed meetups
+        confirmed = BuddyRequest.query.filter(
+            ((BuddyRequest.sender_id == current_user.id) |
+             (BuddyRequest.receiver_id == current_user.id)),
+            BuddyRequest.status == 'Accepted'
+        ).all()
+
+        return render_template('buddy_finder.html',
+                               title='Sport Buddy Finder',
+                               form=form,
+                               matches=matches,
+                               pending_requests=pending_requests,
+                               confirmed=confirmed)
+
+    @app.route('/buddy/request/<int:receiver_id>', methods=['POST'])
+    @login_required
+    def send_buddy_request(receiver_id):
+        receiver = User.query.get_or_404(receiver_id)
+        # Check no existing request
+        existing = BuddyRequest.query.filter(
+            ((BuddyRequest.sender_id == current_user.id) &
+             (BuddyRequest.receiver_id == receiver_id)) |
+            ((BuddyRequest.sender_id == receiver_id) &
+             (BuddyRequest.receiver_id == current_user.id))
+        ).first()
+        if existing:
+            flash('A request already exists with this student.', 'info')
+        else:
+            new_request = BuddyRequest(
+                sender_id=current_user.id,
+                receiver_id=receiver_id
+            )
+            db.session.add(new_request)
+            db.session.commit()
+            flash(f'Meetup request sent to {receiver.name}!', 'success')
+        return redirect(url_for('buddy_finder'))
+
+    @app.route('/buddy/respond/<int:request_id>/<string:action>', methods=['POST'])
+    @login_required
+    def respond_buddy_request(request_id, action):
+        buddy_req = BuddyRequest.query.get_or_404(request_id)
+        if buddy_req.receiver_id != current_user.id:
+            abort(403)
+        if action == 'accept':
+            buddy_req.status = 'Accepted'
+            db.session.commit()
+            flash(f'You are now matched with {buddy_req.sender.name}!', 'success')
+        elif action == 'decline':
+            buddy_req.status = 'Declined'
+            db.session.commit()
+            flash('Request declined.', 'info')
+        return redirect(url_for('buddy_finder'))
 
     return app
 
