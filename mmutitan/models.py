@@ -30,6 +30,9 @@ class User(db.Model, UserMixin):
     is_banned = db.Column(db.Boolean, default=False)
     reset_token = db.Column(db.String(100), nullable=True)
     reset_token_expiry = db.Column(db.DateTime, nullable=True)
+    # --- ADDED for Card 30: Sport Buddy Finder ---
+    availability_days = db.Column(db.String(100), nullable=True)   # e.g. "Mon,Wed,Fri"
+    availability_time = db.Column(db.String(20), nullable=True)    # "Morning", "Afternoon", "Evening"
 
     # Relationships
     rsvps = db.relationship('RSVP', backref='user_ref', lazy=True, cascade="all, delete-orphan")
@@ -39,6 +42,10 @@ class User(db.Model, UserMixin):
     point_history = db.relationship('Point', backref='user_ref', lazy=True, cascade="all, delete-orphan")
     streak_history = db.relationship('Streak', backref='user_ref', lazy=True, cascade="all, delete-orphan")
     feedbacks = db.relationship('Feedback', backref='user_ref', lazy=True, cascade="all, delete-orphan")
+    sent_requests = db.relationship('BuddyRequest', foreign_keys='BuddyRequest.sender_id',
+                                    backref='sender', lazy=True, cascade="all, delete-orphan")
+    received_requests = db.relationship('BuddyRequest', foreign_keys='BuddyRequest.receiver_id',
+                                        backref='receiver', lazy=True, cascade="all, delete-orphan")
 
 # --- TASK MODEL ---
 class Task(db.Model):
@@ -125,10 +132,19 @@ class Streak(db.Model):
     highest_streak = db.Column(db.Integer, default=0)
     last_activity_date = db.Column(db.Date, nullable=True)
 
-# --- FEEDBACK MODEL (Card 31 & 32) ---
+# --- FEEDBACK MODEL (Cards 31 & 32) ---
 class Feedback(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id', ondelete='CASCADE'), nullable=False)
-    submission_type = db.Column(db.String(20), nullable=False)  # 'Feedback' or 'Report'
+    submission_type = db.Column(db.String(20), nullable=False)
     message = db.Column(db.Text, nullable=False)
     submitted_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+
+# --- BUDDY REQUEST MODEL (Card 30) ---
+class BuddyRequest(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    sender_id = db.Column(db.Integer, db.ForeignKey('user.id', ondelete='CASCADE'), nullable=False)
+    receiver_id = db.Column(db.Integer, db.ForeignKey('user.id', ondelete='CASCADE'), nullable=False)
+    # status: 'Pending', 'Accepted', 'Declined'
+    status = db.Column(db.String(20), nullable=False, default='Pending')
+    sent_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
