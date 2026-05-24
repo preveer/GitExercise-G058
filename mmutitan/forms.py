@@ -1,7 +1,7 @@
 from flask_wtf import FlaskForm
 from flask_wtf.file import FileField, FileAllowed
 from wtforms import (StringField, PasswordField, SubmitField, BooleanField,
-                     TextAreaField, IntegerField, SelectField,
+                     TextAreaField, IntegerField, SelectField, SelectMultipleField,
                      DateField, TimeField)
 from wtforms.validators import DataRequired, Length, Email, EqualTo, ValidationError
 from models import User
@@ -10,7 +10,7 @@ from models import User
 class RegistrationForm(FlaskForm):
     name = StringField('Full Name', validators=[DataRequired(), Length(min=2, max=100)])
     email = StringField('Email', validators=[DataRequired(), Email()])
-    password = PasswordField('Password', validators=[DataRequired()])
+    password = PasswordField('Password', validators=[DataRequired(), Length(min=6)])
     confirm_password = PasswordField('Confirm Password',
                                      validators=[DataRequired(), EqualTo('password')])
     faculty = SelectField('Faculty', choices=[
@@ -19,16 +19,16 @@ class RegistrationForm(FlaskForm):
         ('FOM', 'Faculty of Management'),
         ('FCM', 'Faculty of Creative Multimedia')
     ])
-    sport_preferences = StringField('Sport Preferences (comma separated)')
-    picture = FileField('Upload Profile Picture',
+    sport_preferences = StringField('Sport Preferences (e.g. Badminton, Football)')
+    picture = FileField('Profile Picture (optional)',
                         validators=[FileAllowed(['jpg', 'png', 'jpeg'])])
-    submit = SubmitField('Sign Up')
+    submit = SubmitField('Create Account')
 
     def validate_email(self, email):
         user = User.query.filter_by(email=email.data).first()
         if user:
             raise ValidationError(
-                'That email is already registered. Please choose a different one.')
+                'That email is already registered. Please use a different one.')
 
 
 class LoginForm(FlaskForm):
@@ -50,17 +50,22 @@ class UpdateProfileForm(FlaskForm):
     sport_preferences = StringField('Sport Preferences (comma separated)')
     picture = FileField('Update Profile Picture',
                         validators=[FileAllowed(['jpg', 'png', 'jpeg'])])
-    submit = SubmitField('Update')
+    submit = SubmitField('Save Changes')
+
+    def validate_email(self, email):
+        from flask_login import current_user
+        user = User.query.filter_by(email=email.data).first()
+        if user and user.id != current_user.id:
+            raise ValidationError('That email is already taken.')
 
 
 class ChangePasswordForm(FlaskForm):
     old_password = PasswordField('Current Password', validators=[DataRequired()])
-    # Field is named new_password — app.py reads form.new_password.data
-    new_password = PasswordField('New Password', validators=[DataRequired()])
-    confirm_new_password = PasswordField(
+    new_password = PasswordField('New Password', validators=[DataRequired(), Length(min=6)])
+    confirm_password = PasswordField(
         'Confirm New Password',
-        validators=[DataRequired(), EqualTo('new_password')])
-    submit = SubmitField('Change Password')
+        validators=[DataRequired(), EqualTo('new_password', message='Passwords must match')])
+    submit = SubmitField('Update Password')
 
 
 class TaskForm(FlaskForm):
@@ -86,12 +91,10 @@ class ChallengeForm(FlaskForm):
     title = StringField('Challenge Title', validators=[DataRequired()])
     description = TextAreaField('Description', validators=[DataRequired()])
     sport_category = StringField('Sport Category', validators=[DataRequired()])
-    # DateField stores a Python date object; app.py converts it to DateTime
-    deadline = DateField('Deadline', format='%Y-%m-%d',
-                         validators=[DataRequired()])
+    deadline = DateField('Deadline', format='%Y-%m-%d', validators=[DataRequired()])
     scoring_criteria = StringField('Scoring Criteria (e.g., Max Reps)',
                                    validators=[DataRequired()])
-    submit = SubmitField('Create Challenge')
+    submit = SubmitField('Save Challenge')
 
 
 class EventForm(FlaskForm):
@@ -101,7 +104,20 @@ class EventForm(FlaskForm):
     date = DateField('Date', format='%Y-%m-%d', validators=[DataRequired()])
     time = TimeField('Time', validators=[DataRequired()])
     max_capacity = IntegerField('Max Capacity', validators=[DataRequired()])
-    submit = SubmitField('Save Event')
+    submit = SubmitField('Create Event')
+
+
+class ForgotPasswordForm(FlaskForm):
+    email = StringField('Email Address', validators=[DataRequired(), Email()])
+    submit = SubmitField('Send Reset Link')
+
+
+class ResetPasswordForm(FlaskForm):
+    new_password = PasswordField('New Password', validators=[DataRequired(), Length(min=6)])
+    confirm_password = PasswordField(
+        'Confirm New Password',
+        validators=[DataRequired(), EqualTo('new_password', message='Passwords must match')])
+    submit = SubmitField('Reset Password')
 
 
 class BadgeForm(FlaskForm):
@@ -114,3 +130,30 @@ class BadgeForm(FlaskForm):
         ('Competition', 'Challenge Winner')
     ])
     submit = SubmitField('Save Badge')
+
+
+class FeedbackForm(FlaskForm):
+    submission_type = SelectField('Type', choices=[
+        ('Feedback', 'General Feedback / Suggestion'),
+        ('Report', 'Bug Report / Inappropriate Content')
+    ])
+    message = TextAreaField('Your Message', validators=[DataRequired(), Length(min=10, max=2000)])
+    submit = SubmitField('Submit')
+
+
+class BuddyAvailabilityForm(FlaskForm):
+    availability_days = SelectMultipleField('Days You Are Free', choices=[
+        ('Mon', 'Monday'),
+        ('Tue', 'Tuesday'),
+        ('Wed', 'Wednesday'),
+        ('Thu', 'Thursday'),
+        ('Fri', 'Friday'),
+        ('Sat', 'Saturday'),
+        ('Sun', 'Sunday'),
+    ])
+    availability_time = SelectField('Preferred Time', choices=[
+        ('Morning', 'Morning (8am - 12pm)'),
+        ('Afternoon', 'Afternoon (12pm - 5pm)'),
+        ('Evening', 'Evening (5pm - 9pm)'),
+    ])
+    submit = SubmitField('Save Availability')
