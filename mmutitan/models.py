@@ -28,7 +28,6 @@ class User(db.Model, UserMixin):
     streak = db.Column(db.Integer, default=0)
     is_admin = db.Column(db.Boolean, default=False)
     is_banned = db.Column(db.Boolean, default=False)
-    # --- ADDED: columns needed for forgot/reset password feature ---
     reset_token = db.Column(db.String(100), nullable=True)
     reset_token_expiry = db.Column(db.DateTime, nullable=True)
 
@@ -39,6 +38,7 @@ class User(db.Model, UserMixin):
     badges = db.relationship('Badge', secondary=user_badges, backref=db.backref('users', lazy='dynamic'))
     point_history = db.relationship('Point', backref='user_ref', lazy=True, cascade="all, delete-orphan")
     streak_history = db.relationship('Streak', backref='user_ref', lazy=True, cascade="all, delete-orphan")
+    feedbacks = db.relationship('Feedback', backref='user_ref', lazy=True, cascade="all, delete-orphan")
 
 # --- TASK MODEL ---
 class Task(db.Model):
@@ -124,3 +124,11 @@ class Streak(db.Model):
     current_streak = db.Column(db.Integer, default=0)
     highest_streak = db.Column(db.Integer, default=0)
     last_activity_date = db.Column(db.Date, nullable=True)
+
+# --- FEEDBACK MODEL (Card 31 & 32) ---
+class Feedback(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id', ondelete='CASCADE'), nullable=False)
+    submission_type = db.Column(db.String(20), nullable=False)  # 'Feedback' or 'Report'
+    message = db.Column(db.Text, nullable=False)
+    submitted_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
