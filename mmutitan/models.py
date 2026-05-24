@@ -5,23 +5,15 @@ from flask_login import UserMixin, LoginManager
 db = SQLAlchemy()
 login_manager = LoginManager()
 
-# Helper table for many-to-many relationship
+@login_manager.user_loader
+def load_user(user_id):
+    return User.query.get(int(user_id))
+
+# --- MANY-TO-MANY RELATIONSHIP TABLE FOR USER BADGES ---
 user_badges = db.Table('user_badges',
     db.Column('user_id', db.Integer, db.ForeignKey('user.id', ondelete='CASCADE'), primary_key=True),
     db.Column('badge_id', db.Integer, db.ForeignKey('badge.id', ondelete='CASCADE'), primary_key=True)
 )
-
-
-class Point(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    amount = db.Column(db.Integer, nullable=False)
-    source = db.Column(db.String(100), nullable=False)
-    awarded_at = db.Column(db.DateTime, default=datetime.utcnow)
-    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
-
-    def __repr__(self):
-        return f"Point('{self.amount}', '{self.source}', '{self.awarded_at}')"
-
 
 # --- USER MODEL ---
 class User(db.Model, UserMixin):
@@ -29,39 +21,51 @@ class User(db.Model, UserMixin):
     name = db.Column(db.String(100), nullable=False)
     email = db.Column(db.String(120), unique=True, nullable=False)
     password = db.Column(db.String(200), nullable=False)
-    faculty = db.Column(db.String(100))
-    year = db.Column(db.Integer)
-    sport_preferences = db.Column(db.String(200))
-    profile_photo = db.Column(db.String(200), default='default.jpg')
-    is_admin = db.Column(db.Boolean, default=False)
-    is_banned = db.Column(db.Boolean, default=False) # LUTHRA'S NEW BAN FEATURE
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    
-    # DAILY TASK TRACKING
+    faculty = db.Column(db.String(50), nullable=False)
+    sport_preferences = db.Column(db.String(200), default="")
+    profile_photo = db.Column(db.String(20), nullable=False, default='default.jpg')
     points = db.Column(db.Integer, default=0)
     streak = db.Column(db.Integer, default=0)
-    
-    # Cascade deletions so deleting a user doesn't crash the DB
+    is_admin = db.Column(db.Boolean, default=False)
+    is_banned = db.Column(db.Boolean, default=False)
+    reset_token = db.Column(db.String(100), nullable=True)
+    reset_token_expiry = db.Column(db.DateTime, nullable=True)
+    # --- ADDED for Card 30: Sport Buddy Finder ---
+    availability_days = db.Column(db.String(100), nullable=True)   # e.g. "Mon,Wed,Fri"
+    availability_time = db.Column(db.String(20), nullable=True)    # "Morning", "Afternoon", "Evening"
+
+    # Relationships
+    rsvps = db.relationship('RSVP', backref='user_ref', lazy=True, cascade="all, delete-orphan")
+    usertasks = db.relationship('UserTask', backref='user_ref', lazy=True, cascade="all, delete-orphan")
+    submissions = db.relationship('Submission', backref='user_ref', lazy=True, cascade="all, delete-orphan")
     badges = db.relationship('Badge', secondary=user_badges, backref=db.backref('users', lazy='dynamic'))
-    tasks = db.relationship('UserTask', backref='user_ref', cascade="all, delete-orphan", lazy=True)
-    points_history = db.relationship('Point', backref='user_ref', cascade="all, delete-orphan", lazy=True)
-    rsvps = db.relationship('RSVP', backref='user_ref', cascade="all, delete-orphan", lazy=True)
+    point_history = db.relationship('Point', backref='user_ref', lazy=True, cascade="all, delete-orphan")
+    streak_history = db.relationship('Streak', backref='user_ref', lazy=True, cascade="all, delete-orphan")
+    feedbacks = db.relationship('Feedback', backref='user_ref', lazy=True, cascade="all, delete-orphan")
+    sent_requests = db.relationship('BuddyRequest', foreign_keys='BuddyRequest.sender_id',
+                                    backref='sender', lazy=True, cascade="all, delete-orphan")
+    received_requests = db.relationship('BuddyRequest', foreign_keys='BuddyRequest.receiver_id',
+                                        backref='receiver', lazy=True, cascade="all, delete-orphan")
 
 # --- TASK MODEL ---
 class Task(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     title = db.Column(db.String(100), nullable=False)
-    description = db.Column(db.String(250))
-    image_file = db.Column(db.String(100), nullable=False, default='default_badge.png')
-
-class Task(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    title = db.Column(db.String(200), nullable=False)
     description = db.Column(db.Text, nullable=False)
     sport_category = db.Column(db.String(50), nullable=False)
     difficulty = db.Column(db.String(20), nullable=False)
     proof_required = db.Column(db.Boolean, default=False)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    usertasks = db.relationship('UserTask', backref='task_ref', lazy=True, cascade="all, delete-orphan")
+
+# --- USER TASK JOURNAL MODEL ---
+class UserTask(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id', ondelete='CASCADE'), nullable=False)
+    task_id = db.Column(db.Integer, db.ForeignKey('task.id', ondelete='CASCADE'), nullable=False)
+    status = db.Column(db.String(20), default='In Progress')
+    proof_image = db.Column(db.String(20), nullable=True)
+    date_accepted = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
 
 # --- BADGE MODEL ---
 class Badge(db.Model):
@@ -73,12 +77,12 @@ class Badge(db.Model):
 # --- EVENT MODEL ---
 class Event(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(200), nullable=False)
-    venue = db.Column(db.String(200))
-    sport_type = db.Column(db.String(100))
-    date = db.Column(db.Date)
-    time = db.Column(db.Time)
-    max_capacity = db.Column(db.Integer)
+    name = db.Column(db.String(100), nullable=False)
+    venue = db.Column(db.String(100), nullable=False)
+    sport_type = db.Column(db.String(50), nullable=False)
+    date = db.Column(db.Date, nullable=False)
+    time = db.Column(db.Time, nullable=False)
+    max_capacity = db.Column(db.Integer, nullable=False)
 
     rsvps = db.relationship('RSVP', backref='event_ref', lazy=True, cascade="all, delete-orphan")
 
@@ -90,28 +94,57 @@ class RSVP(db.Model):
     waitlisted = db.Column(db.Boolean, default=False)
     checked_in = db.Column(db.Boolean, default=False)
 
-# NEW: MISSING CHALLENGE AND SUBMISSION MODELS FIXED
+# --- CHALLENGE MODEL ---
 class Challenge(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     title = db.Column(db.String(100), nullable=False)
     description = db.Column(db.Text, nullable=False)
+    sport_category = db.Column(db.String(50), nullable=False)
+    deadline = db.Column(db.DateTime, nullable=False)
+    scoring_criteria = db.Column(db.String(100), nullable=False)
+    is_closed = db.Column(db.Boolean, default=False)
 
+    submissions = db.relationship('Submission', backref='challenge_ref', lazy=True, cascade="all, delete-orphan")
+
+# --- SUBMISSION MODEL ---
 class Submission(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
-    challenge_id = db.Column(db.Integer, db.ForeignKey('challenge.id'), nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id', ondelete='CASCADE'), nullable=False)
+    challenge_id = db.Column(db.Integer, db.ForeignKey('challenge.id', ondelete='CASCADE'), nullable=False)
+    result = db.Column(db.String(100), nullable=False)
+    proof_file = db.Column(db.String(20), nullable=False)
     verified = db.Column(db.Boolean, default=False)
-    user = db.relationship('User', backref=db.backref('submissions', lazy=True))
+    submitted_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
 
-@login_manager.user_loader
-def load_user(user_id):
-    return User.query.get(int(user_id))
-
-class UserTask(db.Model):
+# --- POINT HISTORY MODEL ---
+class Point(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
-    task_id = db.Column(db.Integer, db.ForeignKey('task.id'), nullable=False)
-    status = db.Column(db.String(20), default='In Progress')
-    proof_image = db.Column(db.String(100), nullable=True)
-    date_accepted = db.Column(db.DateTime, default=db.func.current_timestamp())
-    task = db.relationship('Task', backref=db.backref('assigned_users', lazy=True))
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id', ondelete='CASCADE'), nullable=False)
+    amount = db.Column(db.Integer, nullable=False)
+    source = db.Column(db.String(100), nullable=False)
+    awarded_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+
+# --- STREAK TRACKER MODEL ---
+class Streak(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id', ondelete='CASCADE'), nullable=False)
+    current_streak = db.Column(db.Integer, default=0)
+    highest_streak = db.Column(db.Integer, default=0)
+    last_activity_date = db.Column(db.Date, nullable=True)
+
+# --- FEEDBACK MODEL (Cards 31 & 32) ---
+class Feedback(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id', ondelete='CASCADE'), nullable=False)
+    submission_type = db.Column(db.String(20), nullable=False)
+    message = db.Column(db.Text, nullable=False)
+    submitted_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+
+# --- BUDDY REQUEST MODEL (Card 30) ---
+class BuddyRequest(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    sender_id = db.Column(db.Integer, db.ForeignKey('user.id', ondelete='CASCADE'), nullable=False)
+    receiver_id = db.Column(db.Integer, db.ForeignKey('user.id', ondelete='CASCADE'), nullable=False)
+    # status: 'Pending', 'Accepted', 'Declined'
+    status = db.Column(db.String(20), nullable=False, default='Pending')
+    sent_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
