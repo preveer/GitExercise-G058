@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% block content %}
+
+<div class="row justify-content-center">
+    <div class="col-md-7">
+        <div class="card shadow-sm mt-3">
+            <div class="card-header bg-dark text-white py-3">
+                <h4 class="mb-0 fw-bold"><i class="fa fa-comment-alt me-2"></i>Feedback & Reports</h4>
+            </div>
+            <div class="card-body p-4">
+
+                <p class="text-muted small mb-4">
+                    Have a suggestion to improve MMU Titan, or spotted a bug or inappropriate content?
+                    Let us know below. Your feedback goes directly to the admin team.
+                </p>
+
+                <form method="POST" action="">
+                    {{ form.hidden_tag() }}
+
+                    <div class="mb-3">
+                        {{ form.submission_type.label }}
+                        {{ form.submission_type(class="form-select") }}
+                    </div>
+
+                    <div class="mb-4">
+                        {{ form.message.label }}
+                        {{ form.message(class="form-control", rows="5",
+                           placeholder="Write your feedback or report here...") }}
+                        {% for error in form.message.errors %}
+                            <small class="text-danger">{{ error }}</small>
+                        {% endfor %}
+                    </div>
+
+                    <div class="d-grid">
+                        {{ form.submit(class="btn btn-danger btn-lg fw-bold") }}
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}

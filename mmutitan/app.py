@@ -1,15 +1,6 @@
 import os
 import secrets
 import random
-<<<<<<< Updated upstream
-from datetime import date, datetime
-from flask import Flask, render_template, url_for, flash, redirect, request
-from flask_login import login_user, current_user, logout_user, login_required
-from models import Task, db, login_manager, User, Badge, Event, RSVP, UserTask
-from forms import RegistrationForm, LoginForm, EventForm, ChangePasswordForm, UpdateProfileForm, TaskForm 
-from config import Config
-
-=======
 from datetime import date, datetime, timedelta
 
 from flask import Flask, abort, render_template, url_for, flash, redirect, request
@@ -17,14 +8,13 @@ from flask_login import login_user, current_user, logout_user, login_required
 from werkzeug.security import generate_password_hash, check_password_hash
 
 from models import (Task, db, login_manager, User, Badge, Event,
-                    RSVP, UserTask, Challenge, Submission, Point)
+                    RSVP, UserTask, Challenge, Submission, Point, Feedback)
 from forms import (BadgeForm, RegistrationForm, LoginForm, EventForm,
                    ChangePasswordForm, UpdateProfileForm, TaskForm, ChallengeForm,
-                   ForgotPasswordForm, ResetPasswordForm)
+                   ForgotPasswordForm, ResetPasswordForm, FeedbackForm)
 from config import Config
 
 
->>>>>>> Stashed changes
 def create_app():
     app = Flask(__name__)
     app.config.from_object(Config)
@@ -35,24 +25,19 @@ def create_app():
     with app.app_context():
         db.create_all()
 
-<<<<<<< Updated upstream
-    # --- HELPER FUNCTIONS ---
-=======
     # ------------------------------------------------------------------ #
     # HELPER FUNCTIONS
     # ------------------------------------------------------------------ #
 
->>>>>>> Stashed changes
     def save_picture(form_picture):
         random_hex = secrets.token_hex(8)
         _, f_ext = os.path.splitext(form_picture.filename)
         picture_fn = random_hex + f_ext
-        picture_path = os.path.join(app.root_path, 'static/profile_pics', picture_fn)
+        picture_path = os.path.join(app.root_path, 'static', 'profile_pics', picture_fn)
+        os.makedirs(os.path.dirname(picture_path), exist_ok=True)
         form_picture.save(picture_path)
         return picture_fn
 
-<<<<<<< Updated upstream
-=======
     def save_upload(form_file):
         random_hex = secrets.token_hex(8)
         _, f_ext = os.path.splitext(form_file.filename)
@@ -62,14 +47,11 @@ def create_app():
         form_file.save(file_path)
         return file_fn
 
->>>>>>> Stashed changes
     def award_points(user_id, amount, source):
+        """Creates a Point log entry. Caller must commit."""
         new_point = Point(user_id=user_id, amount=amount, source=source)
         db.session.add(new_point)
 
-<<<<<<< Updated upstream
-    # --- MAIN ROUTES ---
-=======
     def check_and_award_badges(user):
         """Checks user stats and awards badges they have earned."""
         if user.streak >= 7:
@@ -82,7 +64,6 @@ def create_app():
     # MAIN ROUTES
     # ------------------------------------------------------------------ #
 
->>>>>>> Stashed changes
     @app.route('/')
     def home():
         if current_user.is_authenticated:
@@ -101,16 +82,11 @@ def create_app():
                 email=form.email.data,
                 password=hashed_password,
                 faculty=form.faculty.data,
-                year=form.year.data,
-                sport_preferences=form.sport_preferences.data
             )
-<<<<<<< Updated upstream
-=======
             if form.sport_preferences.data:
                 user.sport_preferences = form.sport_preferences.data
             if form.picture.data and form.picture.data.filename:
                 user.profile_photo = save_picture(form.picture.data)
->>>>>>> Stashed changes
             db.session.add(user)
             db.session.commit()
             flash('Account created! Welcome to the Titan Arena — please log in.', 'success')
@@ -141,9 +117,6 @@ def create_app():
         flash('You have been logged out.', 'info')
         return redirect(url_for('login'))
 
-<<<<<<< Updated upstream
-    # --- LUTHRA'S WEEK 6: ADMIN BACKEND PANEL ---
-=======
     # ------------------------------------------------------------------ #
     # FORGOT / RESET PASSWORD ROUTES
     # ------------------------------------------------------------------ #
@@ -192,23 +165,20 @@ def create_app():
     # ADMIN ROUTES
     # ------------------------------------------------------------------ #
 
->>>>>>> Stashed changes
     @app.route('/admin')
     @login_required
     def admin_dashboard():
         if not current_user.is_admin:
             flash('Access Denied. Admins only.', 'danger')
             return redirect(url_for('home'))
-        
         total_users = User.query.count()
         total_tasks = Task.query.count()
         total_events = Event.query.count()
         pending_submissions = Submission.query.filter_by(verified=False).count()
-        
-        return render_template('admin_dashboard.html', 
-                               total_users=total_users, 
-                               total_tasks=total_tasks, 
-                               total_events=total_events, 
+        return render_template('admin_dashboard.html',
+                               total_users=total_users,
+                               total_tasks=total_tasks,
+                               total_events=total_events,
                                pending_submissions=pending_submissions)
 
     @app.route('/admin/users')
@@ -249,14 +219,6 @@ def create_app():
             flash(f"User {user.name} has been permanently deleted.", "success")
         return redirect(url_for('admin_users'))
 
-<<<<<<< Updated upstream
-    # --- PROFILE ROUTES ---
-    @app.route('/profile')
-    @login_required
-    def profile():
-        point_history = Point.query.filter_by(user_id=current_user.id).order_by(Point.awarded_at.desc()).all()
-        return render_template('profile.html', title='My Profile', user=current_user, point_history=point_history)
-=======
     # ------------------------------------------------------------------ #
     # ADMIN - BADGE ROUTES
     # ------------------------------------------------------------------ #
@@ -363,27 +325,25 @@ def create_app():
                          .all())
         return render_template('profile.html', title='My Profile',
                                user=current_user, point_history=point_history)
->>>>>>> Stashed changes
 
     @app.route('/profile/edit', methods=['GET', 'POST'])
     @login_required
     def edit_profile():
         form = UpdateProfileForm()
         if form.validate_on_submit():
-            if form.profile_photo.data:
-                picture_file = save_picture(form.profile_photo.data)
-                current_user.profile_photo = picture_file
+            if form.picture.data and form.picture.data.filename:
+                current_user.profile_photo = save_picture(form.picture.data)
             current_user.name = form.name.data
+            current_user.email = form.email.data
             current_user.faculty = form.faculty.data
-            current_user.year = form.year.data
             current_user.sport_preferences = form.sport_preferences.data
             db.session.commit()
             flash('Your profile has been updated!', 'success')
             return redirect(url_for('profile'))
         elif request.method == 'GET':
             form.name.data = current_user.name
+            form.email.data = current_user.email
             form.faculty.data = current_user.faculty
-            form.year.data = current_user.year
             form.sport_preferences.data = current_user.sport_preferences
         return render_template('edit_profile.html', title='Edit Profile', form=form)
 
@@ -392,13 +352,6 @@ def create_app():
     def change_password():
         form = ChangePasswordForm()
         if form.validate_on_submit():
-<<<<<<< Updated upstream
-            current_user.password = form.new_password.data
-            db.session.commit()
-            flash('Your password has been updated!', 'success')
-            return redirect(url_for('profile'))
-        return render_template('change_password.html', title='Change Password', form=form)
-=======
             if not check_password_hash(current_user.password, form.old_password.data):
                 flash('Current password is incorrect.', 'danger')
                 return render_template('change_password.html',
@@ -409,16 +362,10 @@ def create_app():
             return redirect(url_for('profile'))
         return render_template('change_password.html',
                                title='Change Password', form=form)
->>>>>>> Stashed changes
 
     @app.route('/my_badges')
     @login_required
     def my_badges():
-<<<<<<< Updated upstream
-        return render_template('badges.html', title='My Badges', badges=current_user.badges)
-
-    # --- EVENT ROUTES ---
-=======
         all_badges = Badge.query.all()
         return render_template('badges.html', all_badges=all_badges,
                                title="My Achievements")
@@ -427,19 +374,21 @@ def create_app():
     # EVENT ROUTES
     # ------------------------------------------------------------------ #
 
->>>>>>> Stashed changes
     @app.route('/admin/events', methods=['GET', 'POST'])
     @login_required
     def manage_events():
         if not current_user.is_admin:
-            flash('Access denied.', 'danger')
+            flash('Access Denied.', 'danger')
             return redirect(url_for('home'))
         form = EventForm()
         if form.validate_on_submit():
             new_event = Event(
-                name=form.name.data, venue=form.venue.data,
-                sport_type=form.sport_type.data, date=form.date.data,
-                time=form.time.data, max_capacity=form.max_capacity.data
+                name=form.name.data,
+                venue=form.venue.data,
+                sport_type=form.sport_type.data,
+                date=form.date.data,
+                time=form.time.data,
+                max_capacity=form.max_capacity.data
             )
             db.session.add(new_event)
             db.session.commit()
@@ -452,25 +401,13 @@ def create_app():
     @login_required
     def list_events():
         events = Event.query.all()
-        user_rsvps = {rsvp.event_id: rsvp for rsvp in RSVP.query.filter_by(user_id=current_user.id).all()}
+        user_rsvps = {rsvp.event_id: rsvp for rsvp in
+                      RSVP.query.filter_by(user_id=current_user.id).all()}
         spots_left = {}
         for event in events:
-            confirmed_count = RSVP.query.filter_by(event_id=event.id, waitlisted=False).count()
+            confirmed_count = RSVP.query.filter_by(
+                event_id=event.id, waitlisted=False).count()
             spots_left[event.id] = event.max_capacity - confirmed_count
-<<<<<<< Updated upstream
-        return render_template('events.html', events=events, user_rsvps=user_rsvps, spots_left=spots_left)
-
-    @app.route('/rsvp/<int:event_id>', methods=['POST'])
-    @login_required
-    def rsvp(event_id):
-        event = Event.query.get_or_404(event_id)
-        existing_rsvp = RSVP.query.filter_by(user_id=current_user.id, event_id=event.id).first()
-        if existing_rsvp:
-            flash('Already RSVP\'d!', 'info')
-            return redirect(url_for('list_events'))
-        count = RSVP.query.filter_by(event_id=event.id, waitlisted=False).count()
-        new_rsvp = RSVP(user_id=current_user.id, event_id=event.id, waitlisted=(count >= event.max_capacity))
-=======
         return render_template('events.html', events=events,
                                user_rsvps=user_rsvps, spots_left=spots_left)
 
@@ -488,7 +425,6 @@ def create_app():
         waitlisted = confirmed_count >= event.max_capacity
         new_rsvp = RSVP(user_id=current_user.id, event_id=event_id,
                         waitlisted=waitlisted)
->>>>>>> Stashed changes
         db.session.add(new_rsvp)
         db.session.commit()
         if waitlisted:
@@ -496,22 +432,6 @@ def create_app():
         else:
             flash('RSVP confirmed! See you there.', 'success')
         return redirect(url_for('list_events'))
-<<<<<<< Updated upstream
-        
-    @app.route('/cancel_rsvp/<int:event_id>', methods=['POST'])
-    @login_required
-    def cancel_rsvp(event_id):
-        rsvp = RSVP.query.filter_by(user_id=current_user.id, event_id=event_id).first()
-        if not rsvp:
-            flash('You are not RSVP\'d.', 'danger')
-            return redirect(url_for('list_events'))
-        was_confirmed = not rsvp.waitlisted
-        db.session.delete(rsvp)
-        if was_confirmed:
-            next_in_line = RSVP.query.filter_by(event_id=event_id, waitlisted=True).order_by(RSVP.id).first()
-            if next_in_line:
-                next_in_line.waitlisted = False 
-=======
 
     @app.route('/events/<int:event_id>/cancel', methods=['POST'])
     @login_required
@@ -519,7 +439,6 @@ def create_app():
         rsvp_entry = RSVP.query.filter_by(user_id=current_user.id,
                                           event_id=event_id).first_or_404()
         db.session.delete(rsvp_entry)
->>>>>>> Stashed changes
         db.session.commit()
         first_waitlisted = RSVP.query.filter_by(event_id=event_id,
                                                  waitlisted=True).first()
@@ -531,21 +450,6 @@ def create_app():
             flash('Your RSVP has been cancelled.', 'info')
         return redirect(url_for('list_events'))
 
-<<<<<<< Updated upstream
-    # NEW: Check-in logic to award points and badge
-    @app.route('/checkin/<int:event_id>', methods=['POST'])
-    @login_required
-    def checkin(event_id):
-        rsvp = RSVP.query.filter_by(user_id=current_user.id, event_id=event_id).first()
-        if rsvp and not rsvp.waitlisted and not rsvp.checked_in:
-            rsvp.checked_in = True
-            current_user.points += 50 # Bonus points!
-            
-            # Award Badge
-            event_badge = Badge.query.filter_by(title="Event Attended").first()
-            if not event_badge:
-                event_badge = Badge(title="Event Attended", description="Attended a campus sporting event!")
-=======
     @app.route('/events/<int:event_id>/checkin', methods=['POST'])
     @login_required
     def checkin(event_id):
@@ -561,7 +465,6 @@ def create_app():
                 event_badge = Badge(title='Event Goer',
                                     description='Attended a campus sporting event',
                                     category="Event")
->>>>>>> Stashed changes
                 db.session.add(event_badge)
             if event_badge not in current_user.badges:
                 current_user.badges.append(event_badge)
@@ -571,31 +474,18 @@ def create_app():
             flash('Check-in failed. You must have a confirmed spot.', 'danger')
         return redirect(url_for('list_events'))
 
-<<<<<<< Updated upstream
-    # --- TASK ROUTES ---
-    @app.route('/tasks')
-    @login_required
-    def daily_tasks():
-        tasks = Task.query.all()
-        return render_template('student_tasks.html', title='Task Pool', tasks=tasks)
-=======
     # ------------------------------------------------------------------ #
     # TASK ROUTES
     # ------------------------------------------------------------------ #
->>>>>>> Stashed changes
 
     @app.route('/admin/tasks')
     @login_required
     def admin_tasks():
         if not current_user.is_admin:
-            flash('Access denied.', 'danger')
+            flash('Access Denied.', 'danger')
             return redirect(url_for('home'))
         tasks = Task.query.all()
-<<<<<<< Updated upstream
-        return render_template('admin_tasks.html', title='Task Management', tasks=tasks)
-=======
         return render_template('admin_tasks.html', tasks=tasks)
->>>>>>> Stashed changes
 
     @app.route('/admin/tasks/add', methods=['GET', 'POST'])
     @login_required
@@ -604,9 +494,13 @@ def create_app():
             return redirect(url_for('home'))
         form = TaskForm()
         if form.validate_on_submit():
-            new_task = Task(title=form.title.data, description=form.description.data,
-                           sport_category=form.sport_category.data, difficulty=form.difficulty.data,
-                           proof_required=form.proof_required.data)
+            new_task = Task(
+                title=form.title.data,
+                description=form.description.data,
+                sport_category=form.sport_category.data,
+                difficulty=form.difficulty.data,
+                proof_required=form.proof_required.data
+            )
             db.session.add(new_task)
             db.session.commit()
             flash('New task added!', 'success')
@@ -616,72 +510,71 @@ def create_app():
     @app.route('/admin/tasks/edit/<int:task_id>', methods=['GET', 'POST'])
     @login_required
     def edit_task(task_id):
+        if not current_user.is_admin:
+            return redirect(url_for('home'))
         task = Task.query.get_or_404(task_id)
         form = TaskForm()
         if form.validate_on_submit():
-            task.title, task.description = form.title.data, form.description.data
+            task.title = form.title.data
+            task.description = form.description.data
+            task.sport_category = form.sport_category.data
+            task.difficulty = form.difficulty.data
+            task.proof_required = form.proof_required.data
             db.session.commit()
+            flash('Task updated!', 'success')
             return redirect(url_for('admin_tasks'))
         elif request.method == 'GET':
-            form.title.data, form.description.data = task.title, task.description
+            form.title.data = task.title
+            form.description.data = task.description
+            form.sport_category.data = task.sport_category
+            form.difficulty.data = task.difficulty
+            form.proof_required.data = task.proof_required
         return render_template('admin_task_form.html', form=form, legend='Edit Task')
 
     @app.route('/admin/tasks/delete/<int:task_id>', methods=['POST'])
     @login_required
     def delete_task(task_id):
+        if not current_user.is_admin:
+            return redirect(url_for('home'))
         task = Task.query.get_or_404(task_id)
+        UserTask.query.filter_by(task_id=task.id).delete()
         db.session.delete(task)
         db.session.commit()
+        flash('Task deleted.', 'info')
         return redirect(url_for('admin_tasks'))
-<<<<<<< Updated upstream
-    
-=======
 
->>>>>>> Stashed changes
     @app.route('/daily_tasks')
     @login_required
     def daily_tasks():
         today = date.today()
-
-        # 1. Check if the user already has tasks assigned for TODAY
         today_tasks = UserTask.query.filter(
             UserTask.user_id == current_user.id,
             db.func.date(UserTask.date_accepted) == today
         ).all()
-
-        # 2. If they have NO tasks for today, generate 3 random ones!
         if len(today_tasks) == 0:
-            # Try to match their sport preference first
             if current_user.sport_preferences:
-                pool = Task.query.filter(Task.sport_category.ilike(f"%{current_user.sport_preferences}%")).all()
+                pool = Task.query.filter(
+                    Task.sport_category.ilike(
+                        f"%{current_user.sport_preferences}%")
+                ).all()
             else:
                 pool = Task.query.all()
-
-            # If the specific pool is too small, just use all available tasks
             if len(pool) < 3:
                 pool = Task.query.all()
-
-            # Pick up to 3 random tasks
             if len(pool) > 0:
                 chosen_tasks = random.sample(pool, min(3, len(pool)))
-                
-                # Assign them to the user
                 for t in chosen_tasks:
-                    new_ut = UserTask(user_id=current_user.id, task_id=t.id, status='In Progress')
+                    new_ut = UserTask(user_id=current_user.id,
+                                      task_id=t.id, status='In Progress')
                     db.session.add(new_ut)
                 db.session.commit()
-
-                # Refresh the list to show them on the page
                 today_tasks = UserTask.query.filter(
                     UserTask.user_id == current_user.id,
                     db.func.date(UserTask.date_accepted) == today
                 ).all()
+        return render_template('daily_tasks.html', title='Daily Quests',
+                               today_tasks=today_tasks)
 
-<<<<<<< Updated upstream
-        return render_template('daily_tasks.html', title='Daily Quests', today_tasks=today_tasks)
-
-=======
->>>>>>> Stashed changes
     @app.route('/submit_proof/<int:user_task_id>', methods=['POST'])
     @login_required
     def submit_proof(user_task_id):
@@ -692,39 +585,34 @@ def create_app():
         if 'proof_image' in request.files:
             file = request.files['proof_image']
             if file.filename != '':
-                # Re-using your exact same profile photo saver!
-                picture_file = save_picture(file) 
+                picture_file = save_picture(file)
                 user_task.proof_image = picture_file
-        user_task.status = 'Pending Review' if user_task.task.proof_required else 'Completed'
+        user_task.status = ('Pending Review'
+                            if user_task.task_ref.proof_required
+                            else 'Completed')
         db.session.commit()
-
-        # --- Check if they finished all 3 tasks today ---
         today = date.today()
         all_today = UserTask.query.filter(
             UserTask.user_id == current_user.id,
             db.func.date(UserTask.date_accepted) == today
         ).all()
-
-        # If every task today is done or waiting for review, give them points!
         if all(ut.status in ['Completed', 'Pending Review'] for ut in all_today):
             base_points = 50
             source_label = "Daily Tasks"
-            user_streak = Streak.query.filter_by(user_id=current_user.id).first()
-            if user_streak and user_streak.current_streak >= 7:
+            if current_user.streak >= 7:
                 base_points = int(base_points * 1.5)
                 source_label = "Daily Tasks (7-Day Streak Bonus)"
             award_points(current_user.id, base_points, source_label)
             current_user.points += base_points
             current_user.streak += 1
+            check_and_award_badges(current_user)
             db.session.commit()
-            flash('🎉 All daily tasks finished! +50 Points and your streak continues!', 'success')
+            flash(f'All daily tasks finished! +{base_points} Points and streak continues!',
+                  'success')
         else:
             flash('Task submitted! Keep going to finish your daily 3.', 'info')
-
         return redirect(url_for('daily_tasks'))
 
-<<<<<<< Updated upstream
-=======
     @app.route('/task/<int:utask_id>/complete', methods=['POST'])
     @login_required
     def complete_task(utask_id):
@@ -928,8 +816,51 @@ def create_app():
         flash('The season has been reset. All student rankings are now at zero.', 'warning')
         return redirect(url_for('admin_dashboard'))
 
->>>>>>> Stashed changes
+
+    # ------------------------------------------------------------------ #
+    # FEEDBACK ROUTES (Cards 31 & 32)
+    # ------------------------------------------------------------------ #
+
+    @app.route('/feedback', methods=['GET', 'POST'])
+    @login_required
+    def submit_feedback():
+        form = FeedbackForm()
+        if form.validate_on_submit():
+            new_feedback = Feedback(
+                user_id=current_user.id,
+                submission_type=form.submission_type.data,
+                message=form.message.data
+            )
+            db.session.add(new_feedback)
+            db.session.commit()
+            flash('Thank you! Your feedback has been submitted.', 'success')
+            return redirect(url_for('submit_feedback'))
+        return render_template('feedback.html', title='Feedback', form=form)
+
+    @app.route('/admin/feedback')
+    @login_required
+    def admin_feedback():
+        if not current_user.is_admin:
+            flash('Access Denied.', 'danger')
+            return redirect(url_for('home'))
+        feedbacks = Feedback.query.order_by(Feedback.submitted_at.desc()).all()
+        return render_template('admin_feedback.html', title='Manage Feedback',
+                               feedbacks=feedbacks)
+
+    @app.route('/admin/feedback/<int:feedback_id>/delete', methods=['POST'])
+    @login_required
+    def delete_feedback(feedback_id):
+        if not current_user.is_admin:
+            flash('Access Denied.', 'danger')
+            return redirect(url_for('home'))
+        feedback = Feedback.query.get_or_404(feedback_id)
+        db.session.delete(feedback)
+        db.session.commit()
+        flash('Feedback entry deleted.', 'info')
+        return redirect(url_for('admin_feedback'))
+
     return app
+
 
 if __name__ == '__main__':
     app = create_app()
