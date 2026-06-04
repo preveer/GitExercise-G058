@@ -2,101 +2,94 @@
 {% block content %}
 <div class="container mt-4">
     <h2 class="fw-bold mb-4">Admin Control Panel</h2>
-   
-    <!-- Stat Cards Overview -->
-    <div class="row mb-5">
-        <div class="col-md-3">
+    
+    <div class="row mb-5 g-3">
+        <div class="col-md-4">
             <div class="card text-white bg-primary shadow-sm border-0 h-100">
-                <div class="card-body text-center">
-                    <h1 class="display-4 fw-bold">{{ total_users }}</h1>
-                    <p class="mb-0 text-uppercase small fw-bold">Total Users</p>
+                <div class="card-body text-center d-flex flex-column justify-content-center py-4">
+                    <h1 class="display-4 fw-bold mb-0">{{ total_users }}</h1>
+                    <p class="mb-0 text-uppercase small fw-bold mt-2">Total Users</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card text-white shadow-sm border-0 h-100" style="background: linear-gradient(135deg, #f4a62a, #b87100);">
+                <div class="card-body text-center d-flex flex-column justify-content-center py-4">
+                    <h1 class="display-4 fw-bold mb-0">{{ total_events }}</h1>
+                    <p class="mb-0 text-uppercase small fw-bold mt-2">Upcoming Events</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card text-white shadow-sm border-0 h-100" style="background: linear-gradient(135deg, #e63946, #9b1b30);">
+                <div class="card-body text-center d-flex flex-column justify-content-center py-4">
+                    <h1 class="display-4 fw-bold mb-0">{{ pending_submissions }}</h1>
+                    <p class="mb-0 text-uppercase small fw-bold mt-2">Pending Reviews</p>
                 </div>
             </div>
         </div>
     </div>
-    <div class="col-6 col-md-3">
-        <div class="card stat-card" style="background:linear-gradient(135deg,#f4a62a,#b87100);">
-            <div class="stat-number">{{ total_events }}</div>
-            <div class="stat-label">Upcoming Events</div>
-        </div>
-    </div>
-    <div class="col-6 col-md-3">
-        <div class="card stat-card" style="background:linear-gradient(135deg,#e63946,#9b1b30);">
-            <div class="stat-number">{{ pending_submissions }}</div>
-            <div class="stat-label">Pending Reviews</div>
-        </div>
-    </div>
-</div>
 
-
-<!-- Management modules -->
-<h5 class="fw-bold mb-3">Management Modules</h5>
-<div class="row g-3 mb-5">
-    <div class="col-md-4">
-        <div class="card p-4 h-100">
-            <div class="mb-2" style="font-size:1.6rem;">👥</div>
-            <h6 class="fw-bold">User Management</h6>
-            <p class="text-muted small">View accounts, ban rule-breakers, delete users.</p>
-            <a href="{{ url_for('admin_users') }}" class="btn btn-dark btn-sm mt-auto">Manage Users</a>
-        </div>
-    </div>
-    <div class="col-md-4">
-        <div class="card p-4 h-100">
-            <div class="mb-2" style="font-size:1.6rem;">⚡</div>
-            <h6 class="fw-bold">Task Pool</h6>
-            <p class="text-muted small">Create, edit or delete the daily quests assigned to students.</p>
-            <a href="{{ url_for('admin_tasks') }}" class="btn btn-dark btn-sm mt-auto">Manage Tasks</a>
-        </div>
-    </div>
-
-
-    <!-- Admin Navigation Links -->
-    <h4 class="fw-bold mb-3">Management Modules</h4>
-    <div class="row">
-        <div class="col-md-6 mb-4">
-            <div class="card shadow-sm border-0">
-                <div class="card-body">
-                    <h5 class="card-title fw-bold">User Management</h5>
-                    <p class="card-text text-muted">View registered accounts, ban rule-breakers, or delete users.</p>
-                    <a href="{{ url_for('admin_users') }}" class="btn btn-dark w-100">Manage Users</a>
-                </div>
+    <h5 class="fw-bold mb-3">Management Modules</h5>
+    <div class="row g-4 mb-5">
+        <div class="col-md-4">
+            <div class="card shadow-sm p-4 h-100 border-0">
+                <div class="mb-2" style="font-size:1.6rem;">👥</div>
+                <h6 class="fw-bold">User Management</h6>
+                <p class="text-muted small">View accounts, ban rule-breakers, and manage user details.</p>
+                <a href="{{ url_for('admin_users') }}" class="btn btn-dark btn-sm mt-auto w-100">Manage Users</a>
             </div>
         </div>
-        <div class="col-md-6 mb-4">
-            <div class="card shadow-sm border-0">
-                <div class="card-body">
-                    <h5 class="card-title fw-bold">Task Pool Management</h5>
-                    <p class="card-text text-muted">Create, edit, or delete the daily tasks assigned to students.</p>
-                    <a href="#" class="btn btn-dark w-100">Manage Tasks</a>
-                </div>
+
+        <div class="col-md-4">
+            <div class="card shadow-sm p-4 h-100 border-0">
+                <div class="mb-2" style="font-size:1.6rem;">⚡</div>
+                <h6 class="fw-bold">Task Pool</h6>
+                <p class="text-muted small">Create, edit, or delete the daily quests assigned to students.</p>
+                <a href="{{ url_for('admin_tasks') }}" class="btn btn-dark btn-sm mt-auto w-100">Manage Tasks</a>
             </div>
         </div>
-    </div>
-</div>
 
-
-    <div class="col-md-4">
-        <div class="card p-4 h-100">
-            <div class="mb-2" style="font-size:1.6rem;">💬</div>
-            <h6 class="fw-bold">Feedback & Reports</h6>
-            <p class="text-muted small">View and delete student feedback and bug reports.</p>
-            <a href="{{ url_for('admin_feedback') }}" class="btn btn-outline-dark btn-sm mt-auto">View Feedback</a>
-        </div>
-        <div class="col-md-6 mb-4">
-            <div class="card shadow-sm border-0">
-                <div class="card-body">
-                    <h5 class="card-title fw-bold">Weekly Challenges</h5>
-                    <p class="card-text text-muted">Verify student submissions and award points for weekly challenges.</p>
-                    <button class="btn btn-secondary w-100" disabled>Coming Soon</button>
-                </div>
+        <div class="col-md-4">
+            <div class="card shadow-sm p-4 h-100 border-0">
+                <div class="mb-2" style="font-size:1.6rem;">📅</div>
+                <h6 class="fw-bold">Event Management</h6>
+                <p class="text-muted small">Schedule new campus sporting events, track RSVP entries, and run check-ins.</p>
+                <a href="{{ url_for('manage_events') }}" class="btn btn-dark btn-sm mt-auto w-100">Manage Events</a>
             </div>
         </div>
-        <form action="{{ url_for('reset_season') }}" method="POST"
-              onsubmit="return confirm('CRITICAL: Are you 100% sure you want to reset the leaderboard?');">
-            <button type="submit" class="btn btn-danger fw-bold">
-                <i class="fa fa-exclamation-triangle me-1"></i>Reset All Points
-            </button>
-        </form>
+
+        <div class="col-md-4">
+            <div class="card shadow-sm p-4 h-100 border-0">
+                <div class="mb-2" style="font-size:1.6rem;">💬</div>
+                <h6 class="fw-bold">Feedback & Reports</h6>
+                <p class="text-muted small">View and delete student feedback and submitted bug reports.</p>
+                <a href="{{ url_for('admin_feedback') }}" class="btn btn-outline-dark btn-sm mt-auto w-100">View Feedback</a>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card shadow-sm p-4 h-100 border-0">
+                <div class="mb-2" style="font-size:1.6rem;">🏆</div>
+                <h6 class="fw-bold">Weekly Challenges</h6>
+                <p class="text-muted small">Verify student task proof submissions and award points/badges.</p>
+                <a href="{{ url_for('admin_challenges') }}" class="btn btn-dark btn-sm mt-auto w-100">Manage Challenges</a>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card shadow-sm p-4 h-100 border-0 bg-light">
+                <div class="mb-2" style="font-size:1.6rem;">⚙️</div>
+                <h6 class="fw-bold text-danger">System Operations</h6>
+                <p class="text-muted small">Wipe cumulative leaderboard data to start a new academic fitness season.</p>
+                <form action="{{ url_for('reset_season') }}" method="POST" class="mt-auto"
+                      onsubmit="return confirm('CRITICAL: Are you 100% sure you want to reset the leaderboard?');">
+                    <button type="submit" class="btn btn-danger btn-sm fw-bold w-100">
+                        <i class="fa fa-exclamation-triangle me-1"></i>Reset All Points
+                    </button>
+                </form>
+            </div>
+        </div>
     </div>
 </div>
 {% endblock %}
