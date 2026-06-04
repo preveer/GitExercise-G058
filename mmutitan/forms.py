@@ -7,6 +7,8 @@ from wtforms.validators import DataRequired, Length, Email, EqualTo, ValidationE
 from models import User
 
 
+
+
 class RegistrationForm(FlaskForm):
     name = StringField('Full Name', validators=[DataRequired(), Length(min=2, max=100)])
     email = StringField('Email', validators=[DataRequired(), Email()])
@@ -24,6 +26,7 @@ class RegistrationForm(FlaskForm):
                         validators=[FileAllowed(['jpg', 'png', 'jpeg'])])
     submit = SubmitField('Create Account')
 
+
     def validate_email(self, email):
         user = User.query.filter_by(email=email.data).first()
         if user:
@@ -31,11 +34,15 @@ class RegistrationForm(FlaskForm):
                 'That email is already registered. Please use a different one.')
 
 
+
+
 class LoginForm(FlaskForm):
     email = StringField('Email', validators=[DataRequired(), Email()])
     password = PasswordField('Password', validators=[DataRequired()])
     remember = BooleanField('Remember Me')
     submit = SubmitField('Login')
+
+
 
 
 class UpdateProfileForm(FlaskForm):
@@ -52,11 +59,14 @@ class UpdateProfileForm(FlaskForm):
                         validators=[FileAllowed(['jpg', 'png', 'jpeg'])])
     submit = SubmitField('Save Changes')
 
+
     def validate_email(self, email):
         from flask_login import current_user
         user = User.query.filter_by(email=email.data).first()
         if user and user.id != current_user.id:
             raise ValidationError('That email is already taken.')
+
+
 
 
 class ChangePasswordForm(FlaskForm):
@@ -66,6 +76,8 @@ class ChangePasswordForm(FlaskForm):
         'Confirm New Password',
         validators=[DataRequired(), EqualTo('new_password', message='Passwords must match')])
     submit = SubmitField('Update Password')
+
+
 
 
 class TaskForm(FlaskForm):
@@ -87,6 +99,8 @@ class TaskForm(FlaskForm):
     submit = SubmitField('Save Task')
 
 
+
+
 class ChallengeForm(FlaskForm):
     title = StringField('Challenge Title', validators=[DataRequired()])
     description = TextAreaField('Description', validators=[DataRequired()])
@@ -95,6 +109,8 @@ class ChallengeForm(FlaskForm):
     scoring_criteria = StringField('Scoring Criteria (e.g., Max Reps)',
                                    validators=[DataRequired()])
     submit = SubmitField('Save Challenge')
+
+
 
 
 class EventForm(FlaskForm):
@@ -107,9 +123,13 @@ class EventForm(FlaskForm):
     submit = SubmitField('Create Event')
 
 
+
+
 class ForgotPasswordForm(FlaskForm):
     email = StringField('Email Address', validators=[DataRequired(), Email()])
     submit = SubmitField('Send Reset Link')
+
+
 
 
 class ResetPasswordForm(FlaskForm):
@@ -118,6 +138,8 @@ class ResetPasswordForm(FlaskForm):
         'Confirm New Password',
         validators=[DataRequired(), EqualTo('new_password', message='Passwords must match')])
     submit = SubmitField('Reset Password')
+
+
 
 
 class BadgeForm(FlaskForm):
@@ -132,6 +154,8 @@ class BadgeForm(FlaskForm):
     submit = SubmitField('Save Badge')
 
 
+
+
 class FeedbackForm(FlaskForm):
     submission_type = SelectField('Type', choices=[
         ('Feedback', 'General Feedback / Suggestion'),
@@ -139,6 +163,8 @@ class FeedbackForm(FlaskForm):
     ])
     message = TextAreaField('Your Message', validators=[DataRequired(), Length(min=10, max=2000)])
     submit = SubmitField('Submit')
+
+
 
 
 class BuddyAvailabilityForm(FlaskForm):
