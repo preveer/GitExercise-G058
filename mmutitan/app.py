@@ -102,6 +102,7 @@ def create_app():
                 user.sport_preferences = form.sport_preferences.data
             if form.picture.data and form.picture.data.filename:
                 user.profile_photo = save_picture(form.picture.data)
+
             db.session.add(user)
             db.session.commit()
             flash('Account created! Welcome to the Titan Arena — please log in.', 'success')

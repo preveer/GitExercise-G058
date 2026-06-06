@@ -1,8 +1,10 @@
 {% extends "base.html" %}
 {% block content %}
 
+
 <div class="row g-4">
     <div class="col-md-8">
+
 
         <div class="card mb-3">
             <div class="card-body p-4">
@@ -17,6 +19,7 @@
                 <span class="badge bg-info text-dark mb-3">{{ challenge.sport_category }}</span>
                 <p class="text-muted">{{ challenge.description }}</p>
 
+
                 <div class="row mt-3">
                     <div class="col-sm-6">
                         <p class="small fw-bold text-uppercase text-muted mb-1">Scoring Criteria</p>
@@ -30,15 +33,18 @@
             </div>
         </div>
 
+
         <!-- Submission section -->
         <div class="card">
             <div class="card-body p-4">
                 <h5 class="fw-bold mb-3">Submit Your Attempt</h5>
 
+
                 {% if challenge.is_closed %}
                 <div class="alert alert-warning">
                     <strong>Challenge Closed.</strong> No more submissions are accepted.
                 </div>
+
 
                 {% elif existing_submission %}
                 <div class="alert alert-success">
@@ -47,6 +53,7 @@
                 <p class="fw-semibold mb-2">Your proof:</p>
                 <img src="{{ url_for('static', filename='uploads/' + existing_submission.proof_file) }}"
                      alt="Proof" class="img-fluid rounded" style="max-height:220px;object-fit:cover;">
+
 
                 {% else %}
                 <form method="POST" action="" enctype="multipart/form-data">
@@ -67,6 +74,7 @@
         </div>
     </div>
 
+
     <!-- Live leaderboard -->
     <div class="col-md-4">
         <div class="card sticky-top" style="top:20px;">
@@ -79,7 +87,7 @@
                     {% for sub in submissions %}
                     <li class="list-group-item d-flex justify-content-between align-items-center py-3">
                         <div>
-                            <strong>{{ sub.user.name }}</strong>
+                            <strong>{{ sub.user_ref.name }}</strong>
                             <br><span class="text-muted small">{{ sub.result }}</span>
                         </div>
                         {% if sub.verified %}
