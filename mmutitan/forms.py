@@ -169,15 +169,12 @@ class FeedbackForm(FlaskForm):
 
 class BuddyAvailabilityForm(FlaskForm):
     availability_days = SelectMultipleField('Days You Are Free', choices=[
-        ('Mon', 'Monday'),
-        ('Tue', 'Tuesday'),
-        ('Wed', 'Wednesday'),
-        ('Thu', 'Thursday'),
-        ('Fri', 'Friday'),
-        ('Sat', 'Saturday'),
-        ('Sun', 'Sunday'),
+        ('Mon', 'Monday'), ('Tue', 'Tuesday'), ('Wed', 'Wednesday'),
+        ('Thu', 'Thursday'), ('Fri', 'Friday'), ('Sat', 'Saturday'), ('Sun', 'Sunday')
     ])
-    availability_time = SelectField('Preferred Time', choices=[
+
+    # CHANGE THIS LINE BELOW:
+    availability_time = SelectMultipleField('Preferred Time', choices=[
         ('Morning', 'Morning (8am - 12pm)'),
         ('Afternoon', 'Afternoon (12pm - 5pm)'),
         ('Evening', 'Evening (5pm - 9pm)'),

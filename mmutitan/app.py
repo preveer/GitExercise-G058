@@ -972,21 +972,21 @@ def create_app():
     def buddy_finder():
         form = BuddyAvailabilityForm()
 
+    # Pre-fill form with current saved availability
+    if request.method == 'GET':
+        if current_user.availability_days:
+            form.availability_days.data = current_user.availability_days.split(',')
+        if current_user.availability_time:
+            # CHANGE THIS LINE to split by comma:
+            form.availability_time.data = current_user.availability_time.split(',')
 
-        # Pre-fill form with current saved availability
-        if request.method == 'GET':
-            if current_user.availability_days:
-                form.availability_days.data = current_user.availability_days.split(',')
-            if current_user.availability_time:
-                form.availability_time.data = current_user.availability_time
-
-
-        if form.validate_on_submit():
-            current_user.availability_days = ','.join(form.availability_days.data)
-            current_user.availability_time = form.availability_time.data
-            db.session.commit()
-            flash('Your availability has been saved!', 'success')
-            return redirect(url_for('buddy_finder'))
+    if form.validate_on_submit():
+        current_user.availability_days = ','.join(form.availability_days.data)
+        # CHANGE THIS LINE to join by comma:
+        current_user.availability_time = ','.join(form.availability_time.data)
+        db.session.commit()
+        flash('Your availability has been saved!', 'success')
+        return redirect(url_for('buddy_finder'))
 
 
         # Find matches — same sport preference AND overlapping availability days
