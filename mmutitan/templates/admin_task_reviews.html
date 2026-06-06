@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h2 class="fw-bold mb-0">Daily Quest Reviews</h2>
+        <p class="text-muted small mb-0">Verify student photo proofs</p>
+    </div>
+    <a href="{{ url_for('admin_dashboard') }}" class="btn btn-outline-dark btn-sm">
+        <i class="fa fa-arrow-left me-1"></i>Back
+    </a>
+</div>
+
+<div class="row g-3">
+    {% for ut in pending_tasks %}
+    <div class="col-md-4">
+        <div class="card h-100 shadow-sm border-info border-2">
+            <img src="{{ url_for('static', filename='uploads/' + ut.proof_image) }}" class="card-img-top" alt="Proof" style="height:200px;object-fit:cover;">
+            <div class="card-body">
+                <h6 class="fw-bold mb-1">{{ ut.user_ref.name }}</h6>
+                <p class="small text-muted mb-2">{{ ut.task_ref.title }}</p>
+                <div class="d-flex gap-2 mt-3">
+                    <form action="{{ url_for('verify_daily_task', utask_id=ut.id, action='approve') }}" method="POST" class="w-50">
+                        <button type="submit" class="btn btn-success w-100 btn-sm fw-bold">Approve</button>
+                    </form>
+                    <form action="{{ url_for('verify_daily_task', utask_id=ut.id, action='reject') }}" method="POST" class="w-50">
+                        <button type="submit" class="btn btn-outline-danger w-100 btn-sm">Reject</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% else %}
+    <div class="col-12 text-center py-5">
+        <h4 class="text-muted">No pending reviews.</h4>
+    </div>
+    {% endfor %}
+</div>
+{% endblock %}
