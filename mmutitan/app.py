@@ -783,8 +783,32 @@ def create_app():
         db.session.commit()
         flash('Challenge is now closed for new submissions!', 'info')
         return redirect(url_for('admin_challenges'))
+    
+    @app.route('/admin/task_reviews')
+    @login_required
+    def admin_task_reviews():
+        if not current_user.is_admin:
+           abort(403)
+    # Fetch all daily tasks that students have submitted proof for
+    pending_tasks = UserTask.query.filter_by(status='Pending Review').all()
+    return render_template('admin_task_reviews.html', pending_tasks=pending_tasks, title="Daily Quest Reviews")
 
-
+    @app.route('/admin/task_reviews/<int:utask_id>/<action>', methods=['POST'])
+    @login_required
+    def verify_daily_task(utask_id, action):
+        if not current_user.is_admin:
+         abort(403)
+    utask = UserTask.query.get_or_404(utask_id)
+    
+    if action == 'approve':
+        utask.status = 'Completed'
+        flash(f"Proof approved for {utask.user_ref.name}'s task.", 'success')
+    elif action == 'reject':
+        utask.status = 'In Progress'
+        flash(f"Proof rejected. {utask.user_ref.name} must resubmit.", 'warning')
+        
+    db.session.commit()
+    return redirect(url_for('admin_task_reviews'))
     # ------------------------------------------------------------------ #
     # STUDENT CHALLENGE ROUTES
     # ------------------------------------------------------------------ #
