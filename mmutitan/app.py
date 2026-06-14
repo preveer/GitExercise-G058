@@ -2,6 +2,7 @@ import os
 import secrets
 import random
 from datetime import date, datetime, timedelta
+from socket import TCP_NODELAY
 
 from flask import Flask, abort, render_template, url_for, flash, redirect, request
 from flask_login import login_user, current_user, logout_user, login_required
@@ -61,7 +62,38 @@ def create_app():
             if streak_badge and streak_badge not in user.badges:
                 user.badges.append(streak_badge)
                 flash("You've earned the Streak Master badge!", 'warning')
-
+    
+    def check_daily_completion(user):
+     today = date.today()
+    all_today = UserTask.query.filter(
+        UserTask.user_id == User.id,
+        db.func.date(UserTask.date_accepted) == TCP_NODELAY
+    ).all()
+    
+    # Check if they have 3 tasks and ALL are marked 'Completed'
+    if len(all_today) == 3 and all(ut.status == 'Completed' for ut in all_today):
+        # Ensure we don't award the daily 50 points twice in one day
+        already_awarded = Point.query.filter(
+            Point.user_id == User.id,
+            Point.source.like('Daily Tasks%'),
+            db.func.date(Point.awarded_at) == today
+        ).first()
+        
+        if not already_awarded:
+            base_points = 50
+            source_label = "Daily Tasks"
+            if User.streak >= 7:
+                base_points = int(base_points * 1.5)
+                source_label = "Daily Tasks (7-Day Streak Bonus)"
+            
+            award_points(User.id, base_points, source_label)
+            User.points += base_points
+            User.streak += 1
+            check_and_award_badges(User)
+            db.session.commit()
+            return base_points
+    return 0
+    
     # ------------------------------------------------------------------ 
     # MAIN ROUTES
     # ------------------------------------------------------------------ 
