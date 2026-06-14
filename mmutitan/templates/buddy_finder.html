@@ -8,7 +8,6 @@
 
 <div class="row g-4">
 
-    <!-- Left: Availability settings -->
     <div class="col-md-4">
         <div class="card shadow-sm">
             <div class="card-header bg-dark text-white py-3">
@@ -17,26 +16,39 @@
             <div class="card-body p-4">
                 <form method="POST" action="">
                     {{ form.hidden_tag() }}
-
-                    <div class="mb-3">
-                        {{ form.availability_days.label(class="form-label fw-bold") }}
-                        <div class="d-flex flex-wrap gap-2 mt-1">
-                            {% for value, label in form.availability_days.choices %}
-                            <div class="form-check form-check-inline">
-                                <input class="form-check-input" type="checkbox"
-                                       name="availability_days"
-                                       id="day_{{ value }}"
-                                       value="{{ value }}"
-                                       {% if value in (form.availability_days.data or []) %}checked{% endif %}>
-                                <label class="form-check-label small" for="day_{{ value }}">{{ label }}</label>
-                            </div>
-                            {% endfor %}
-                        </div>
-                    </div>
-
+                    
                     <div class="mb-4">
-                        {{ form.availability_time.label(class="form-label fw-bold") }}
-                        {{ form.availability_time(class="form-select") }}
+                        <label class="form-label fw-bold mb-3">Set Your Weekly Availability</label>
+                        <div class="row g-3">
+                            <div class="col-12">
+                                <span class="small fw-semibold text-muted d-block mb-1">Monday</span>
+                                {{ form.mon_time(class="form-select form-select-sm") }}
+                            </div>
+                            <div class="col-12">
+                                <span class="small fw-semibold text-muted d-block mb-1">Tuesday</span>
+                                {{ form.tue_time(class="form-select form-select-sm") }}
+                            </div>
+                            <div class="col-12">
+                                <span class="small fw-semibold text-muted d-block mb-1">Wednesday</span>
+                                {{ form.wed_time(class="form-select form-select-sm") }}
+                            </div>
+                            <div class="col-12">
+                                <span class="small fw-semibold text-muted d-block mb-1">Thursday</span>
+                                {{ form.thu_time(class="form-select form-select-sm") }}
+                            </div>
+                            <div class="col-12">
+                                <span class="small fw-semibold text-muted d-block mb-1">Friday</span>
+                                {{ form.fri_time(class="form-select form-select-sm") }}
+                            </div>
+                            <div class="col-6">
+                                <span class="small fw-semibold text-muted d-block mb-1">Saturday</span>
+                                {{ form.sat_time(class="form-select form-select-sm") }}
+                            </div>
+                            <div class="col-6">
+                                <span class="small fw-semibold text-muted d-block mb-1">Sunday</span>
+                                {{ form.sun_time(class="form-select form-select-sm") }}
+                            </div>
+                        </div>
                     </div>
 
                     <div class="d-grid">
@@ -46,15 +58,16 @@
 
                 {% if current_user.availability_days %}
                 <hr>
-                <p class="small text-muted mb-1"><strong>Your saved days:</strong>
-                    {{ current_user.availability_days.replace(',', ', ') }}</p>
-                <p class="small text-muted mb-0"><strong>Preferred time:</strong>
-                    {{ current_user.availability_time or 'Not set' }}</p>
+                <p class="small text-muted mb-1"><strong>Your active schedule:</strong></p>
+                <div class="d-flex flex-wrap gap-1 mt-1">
+                    {% for slot in current_user.availability_days.split(',') %}
+                        <span class="badge bg-dark">{{ slot.replace(':', ' ') }}</span>
+                    {% endfor %}
+                </div>
                 {% endif %}
             </div>
         </div>
 
-        <!-- Pending incoming requests -->
         {% if pending_requests %}
         <div class="card shadow-sm mt-4">
             <div class="card-header bg-warning text-dark py-3">
@@ -82,7 +95,6 @@
         </div>
         {% endif %}
 
-        <!-- Confirmed meetups -->
         {% if confirmed %}
         <div class="card shadow-sm mt-4">
             <div class="card-header bg-success text-white py-3">
@@ -105,7 +117,6 @@
         {% endif %}
     </div>
 
-    <!-- Right: Matches list -->
     <div class="col-md-8">
         <div class="card shadow-sm">
             <div class="card-header bg-white border-bottom py-3">
@@ -141,15 +152,16 @@
                                     <i class="fa fa-running me-1 text-danger"></i>
                                     {{ match.user.sport_preferences }}
                                 </p>
-                                <p class="small mb-1">
-                                    <i class="fa fa-clock me-1 text-muted"></i>
-                                    {{ match.user.availability_time }}
-                                </p>
-                                <p class="small mb-3">
+                                
+                                <div class="small mb-3">
                                     <i class="fa fa-calendar me-1 text-muted"></i>
-                                    Common days:
-                                    <span class="fw-semibold">{{ match.common_days | join(', ') }}</span>
-                                </p>
+                                    Shared slots:<br>
+                                    <div class="d-flex flex-wrap gap-1 mt-1">
+                                        {% for slot in match.shared_slots %}
+                                            <span class="badge bg-danger">{{ slot.replace(':', ' ') }}</span>
+                                        {% endfor %}
+                                    </div>
+                                </div>
 
                                 {% if match.existing_request %}
                                     {% if match.existing_request.status == 'Pending' %}
