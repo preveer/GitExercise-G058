@@ -168,15 +168,15 @@ class FeedbackForm(FlaskForm):
 
 
 class BuddyAvailabilityForm(FlaskForm):
-    availability_days = SelectMultipleField('Days You Are Free', choices=[
-        ('Mon', 'Monday'), ('Tue', 'Tuesday'), ('Wed', 'Wednesday'),
-        ('Thu', 'Thursday'), ('Fri', 'Friday'), ('Sat', 'Saturday'), ('Sun', 'Sunday')
-    ])
-
-    # CHANGE THIS LINE BELOW:
-    availability_time = SelectMultipleField('Preferred Time', choices=[
-        ('Morning', 'Morning (8am - 12pm)'),
-        ('Afternoon', 'Afternoon (12pm - 5pm)'),
-        ('Evening', 'Evening (5pm - 9pm)'),
-    ])
+    # Allow mapping specific times to specific days
+    time_choices = [('', 'Not Available'), ('Morning', 'Morning (8am - 12pm)'), ('Afternoon', 'Afternoon (12pm - 5pm)'), ('Evening', 'Evening (5pm - 9pm)')]
+    
+    mon_time = SelectField('Monday', choices=time_choices)
+    tue_time = SelectField('Tuesday', choices=time_choices)
+    wed_time = SelectField('Wednesday', choices=time_choices)
+    thu_time = SelectField('Thursday', choices=time_choices)
+    fri_time = SelectField('Friday', choices=time_choices)
+    sat_time = SelectField('Saturday', choices=time_choices)
+    sun_time = SelectField('Sunday', choices=time_choices)
+    
     submit = SubmitField('Save Availability')
