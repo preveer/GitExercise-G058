@@ -2,7 +2,6 @@ import os
 import secrets
 import random
 from datetime import date, datetime, timedelta
-from socket import TCP_NODELAY
 
 from flask import Flask, abort, render_template, url_for, flash, redirect, request
 from flask_login import login_user, current_user, logout_user, login_required
@@ -16,7 +15,6 @@ from forms import (BadgeForm, RegistrationForm, LoginForm, EventForm,
                    ChallengeForm, ForgotPasswordForm, ResetPasswordForm, FeedbackForm,
                    BuddyAvailabilityForm)
 from config import Config
-
 
 def create_app():
     app = Flask(__name__)
@@ -64,35 +62,36 @@ def create_app():
                 flash("You've earned the Streak Master badge!", 'warning')
     
     def check_daily_completion(user):
-     today = date.today()
-    all_today = UserTask.query.filter(
-        UserTask.user_id == User.id,
-        db.func.date(UserTask.date_accepted) == TCP_NODELAY
-    ).all()
+        """Checks if all 3 daily tasks are Complete and awards the 50 points."""
+        today = date.today()
+        all_today = UserTask.query.filter(
+            UserTask.user_id == user.id,
+            db.func.date(UserTask.date_accepted) == today
+        ).all()
     
-    # Check if they have 3 tasks and ALL are marked 'Completed'
-    if len(all_today) == 3 and all(ut.status == 'Completed' for ut in all_today):
-        # Ensure we don't award the daily 50 points twice in one day
-        already_awarded = Point.query.filter(
-            Point.user_id == User.id,
-            Point.source.like('Daily Tasks%'),
-            db.func.date(Point.awarded_at) == today
-        ).first()
+        # Check if they have 3 tasks and ALL are marked 'Completed'
+        if len(all_today) == 3 and all(ut.status == 'Completed' for ut in all_today):
+            # Ensure we don't award the daily 50 points twice in one day
+            already_awarded = Point.query.filter(
+                Point.user_id == user.id,
+                Point.source.like('Daily Tasks%'),
+                db.func.date(Point.awarded_at) == today
+            ).first()
         
-        if not already_awarded:
-            base_points = 50
-            source_label = "Daily Tasks"
-            if User.streak >= 7:
-                base_points = int(base_points * 1.5)
-                source_label = "Daily Tasks (7-Day Streak Bonus)"
+            if not already_awarded:
+                base_points = 50
+                source_label = "Daily Tasks"
+                if user.streak >= 7:
+                    base_points = int(base_points * 1.5)
+                    source_label = "Daily Tasks (7-Day Streak Bonus)"
             
-            award_points(User.id, base_points, source_label)
-            User.points += base_points
-            User.streak += 1
-            check_and_award_badges(User)
-            db.session.commit()
-            return base_points
-    return 0
+                award_points(user.id, base_points, source_label)
+                user.points += base_points
+                user.streak += 1
+                check_and_award_badges(user)
+                db.session.commit()
+                return base_points
+        return 0
     
     # ------------------------------------------------------------------ 
     # MAIN ROUTES
@@ -319,18 +318,20 @@ def create_app():
     # ADMIN - SUBMISSION VERIFICATION
     # ------------------------------------------------------------------ 
 
-    @app.route('/admin/submissions/<int:submission_id>/verify', methods=['POST'])
+    @app.route('/admin/submissions/<int:submission_id>/<action>', methods=['POST'])
     @login_required
-    def verify_submission(submission_id):
+    def verify_submission(submission_id, action):
         if not current_user.is_admin:
             abort(403)
         submission = Submission.query.get_or_404(submission_id)
-        if not submission.verified:
+    
+    if not submission.verified:
+        if action == 'approve':
             submission.verified = True
             student = User.query.get(submission.user_id)
             student.points += 50
             award_points(student.id, 50, f"Challenge Verified: {submission.challenge_ref.title}")
-
+            
             top_3_users = User.query.order_by(User.points.desc()).limit(3).all()
             if student in top_3_users:
                 winner_badge = Badge.query.filter_by(title='Weekly Winner').first()
@@ -340,9 +341,15 @@ def create_app():
             
             db.session.commit()
             flash('Submission verified and 50 points awarded!', 'success')
-        else:
-            flash('This submission was already verified.', 'info')
-        return redirect(url_for('view_submissions', challenge_id=submission.challenge_id))
+            
+        elif action == 'reject':
+            db.session.delete(submission)
+            db.session.commit()
+            flash('Submission rejected and removed so the student can submit a valid proof.', 'warning')
+    else:
+        flash('This submission was already verified.', 'info')
+        
+    return redirect(url_for('view_submissions', challenge_id=submission.challenge_id))
 
     # ------------------------------------------------------------------ 
     # PROFILE ROUTES
@@ -591,35 +598,30 @@ def create_app():
         if user_task.user_id != current_user.id:
             flash('Unauthorized action.', 'danger')
             return redirect(url_for('daily_tasks'))
+        
         if 'proof_image' in request.files:
             file = request.files['proof_image']
             if file.filename != '':
                 picture_file = save_picture(file)
                 user_task.proof_image = picture_file
         
-        user_task.status = 'Pending Review' if user_task.task_ref.proof_required else 'Completed'
-        db.session.commit()
-
-        today = date.today()
-        all_today = UserTask.query.filter(
-            UserTask.user_id == current_user.id,
-            db.func.date(UserTask.date_accepted) == today
-        ).all()
-
-        if all(ut.status in ['Completed', 'Pending Review'] for ut in all_today):
-            base_points = 50
-            source_label = "Daily Tasks"
-            if current_user.streak >= 7:
-                base_points = int(base_points * 1.5)
-                source_label = "Daily Tasks (7-Day Streak Bonus)"
-            award_points(current_user.id, base_points, source_label)
-            current_user.points += base_points
-            current_user.streak += 1
-            check_and_award_badges(current_user)
+        # Determine status: if proof is needed, route it to admin evaluation
+        if user_task.task_ref.proof_required:
+            user_task.status = 'Pending Review'
             db.session.commit()
-            flash(f'All daily tasks finished! +{base_points} Points and streak continues!', 'success')
+            flash('Photo submitted! Evaluation is pending admin approval.', 'info')
         else:
-            flash('Task submitted! Keep going to finish your daily 3.', 'info')
+            # Immediate completion only if no physical proof was requested
+            user_task.status = 'Completed'
+            current_user.points += 10
+            award_points(current_user.id, 10, f"Task: {user_task.task_ref.title}")
+            bonus = check_daily_completion(current_user)
+            db.session.commit()
+            if bonus:
+                flash(f'Task done! All daily tasks finished! +{bonus} Bonus Points!', 'success')
+            else:
+                flash('Task completed! +10 Points!', 'success')
+            
         return redirect(url_for('daily_tasks'))
 
     @app.route('/task/<int:utask_id>/complete', methods=['POST'])
@@ -852,62 +854,79 @@ def create_app():
     def buddy_finder():
         form = BuddyAvailabilityForm()
 
-        # Pre-fill form with current saved availability
         if request.method == 'GET':
-            if current_user.availability_days:
-                form.availability_days.data = current_user.availability_days.split(',')
-            if current_user.availability_time:
-                # NEW ADDITION: Safely split current comma-separated selections
-                form.availability_time.data = current_user.availability_time.split(',')
+         if current_user.availability_days:
+            # Parse saved "Mon:Morning,Tue:Afternoon" data
+            for entry in current_user.availability_days.split(','):
+                if ':' in entry:
+                    day, time = entry.split(':')
+                    if day == 'Mon': form.mon_time.data = time
+                    elif day == 'Tue': form.tue_time.data = time
+                    elif day == 'Wed': form.wed_time.data = time
+                    elif day == 'Thu': form.thu_time.data = time
+                    elif day == 'Fri': form.fri_time.data = time
+                    elif day == 'Sat': form.sat_time.data = time
+                    elif day == 'Sun': form.sun_time.data = time
 
-        if form.validate_on_submit():
-            current_user.availability_days = ','.join(form.availability_days.data)
-            # NEW ADDITION: Safely store selections together as a clean comma-separated list
-            current_user.availability_time = ','.join(form.availability_time.data)
-            db.session.commit()
-            flash('Your availability has been saved!', 'success')
-            return redirect(url_for('buddy_finder'))
+    if form.validate_on_submit():
+        avail = []
+        if form.mon_time.data: avail.append(f"Mon:{form.mon_time.data}")
+        if form.tue_time.data: avail.append(f"Tue:{form.tue_time.data}")
+        if form.wed_time.data: avail.append(f"Wed:{form.wed_time.data}")
+        if form.thu_time.data: avail.append(f"Thu:{form.thu_time.data}")
+        if form.fri_time.data: avail.append(f"Fri:{form.fri_time.data}")
+        if form.sat_time.data: avail.append(f"Sat:{form.sat_time.data}")
+        if form.sun_time.data: avail.append(f"Sun:{form.sun_time.data}")
+        
+        current_user.availability_days = ','.join(avail)
+        db.session.commit()
+        flash('Your detailed weekly schedule has been saved!', 'success')
+        return redirect(url_for('buddy_finder'))
 
-        # Find matches
-        matches = []
-        if current_user.availability_days and current_user.sport_preferences:
-            my_days = set(current_user.availability_days.split(','))
-            my_sport = current_user.sport_preferences.lower()
+    # Matchmaking Algorithm
+    matches = []
+    if current_user.availability_days and current_user.sport_preferences:
+        my_avail = current_user.availability_days.split(',')
+        my_sport = current_user.sport_preferences.lower()
 
-            candidates = User.query.filter(
-                User.id != current_user.id,
-                User.is_banned == False,
-                User.availability_days != None,
-                User.availability_days != '',
-                User.sport_preferences != None,
-                User.sport_preferences != ''
-            ).all()
-
-            for candidate in candidates:
-                if my_sport not in candidate.sport_preferences.lower():
-                    continue
-                their_days = set(candidate.availability_days.split(','))
-                if not my_days.intersection(their_days):
-                    continue
-
-                existing = BuddyRequest.query.filter(
-                    ((BuddyRequest.sender_id == current_user.id) & (BuddyRequest.receiver_id == candidate.id)) |
-                    ((BuddyRequest.sender_id == candidate.id) & (BuddyRequest.receiver_id == current_user.id))
-                ).first()
-
-                matches.append({
-                    'user': candidate,
-                    'common_days': sorted(my_days.intersection(their_days)),
-                    'existing_request': existing
-                })
-
-        pending_requests = BuddyRequest.query.filter_by(receiver_id=current_user.id, status='Pending').all()
-        confirmed = BuddyRequest.query.filter(
-            ((BuddyRequest.sender_id == current_user.id) | (BuddyRequest.receiver_id == current_user.id)),
-            BuddyRequest.status == 'Accepted'
+        candidates = User.query.filter(
+            User.id != current_user.id,
+            User.is_banned == False,
+            User.availability_days != None,
+            User.availability_days != '',
+            User.sport_preferences != None,
+            User.sport_preferences != ''
         ).all()
 
-        return render_template('buddy_finder.html', title='Sport Buddy Finder', form=form, matches=matches, pending_requests=pending_requests, confirmed=confirmed)
+        for candidate in candidates:
+            if my_sport not in candidate.sport_preferences.lower():
+                continue
+            
+            their_avail = candidate.availability_days.split(',')
+            
+            # Find overlapping day+time exact matches
+            shared = list(set(my_avail).intersection(set(their_avail)))
+            if not shared:
+                continue
+
+            existing = BuddyRequest.query.filter(
+                ((BuddyRequest.sender_id == current_user.id) & (BuddyRequest.receiver_id == candidate.id)) |
+                ((BuddyRequest.sender_id == candidate.id) & (BuddyRequest.receiver_id == current_user.id))
+            ).first()
+
+            matches.append({
+                'user': candidate,
+                'shared_slots': shared,
+                'existing_request': existing
+            })
+
+    pending_requests = BuddyRequest.query.filter_by(receiver_id=current_user.id, status='Pending').all()
+    confirmed = BuddyRequest.query.filter(
+        ((BuddyRequest.sender_id == current_user.id) | (BuddyRequest.receiver_id == current_user.id)),
+        BuddyRequest.status == 'Accepted'
+    ).all()
+
+    return render_template('buddy_finder.html', title='Sport Buddy Finder', form=form, matches=matches, pending_requests=pending_requests, confirmed=confirmed)
 
     @app.route('/buddy/request/<int:receiver_id>', methods=['POST'])
     @login_required
@@ -959,26 +978,32 @@ def create_app():
     @app.route('/admin/task_reviews/<int:utask_id>/<action>', methods=['POST'])
     @login_required
     def verify_daily_task(utask_id, action):
-        if not current_user.is_admin:
-            abort(403)
+     if not current_user.is_admin:
+        abort(403)
 
-        utask = UserTask.query.get_or_404(utask_id)
+    utask = UserTask.query.get_or_404(utask_id)
 
-        if action == 'approve':
-            utask.status = 'Completed'
-            flash(f"Proof approved for {utask.user_ref.name}'s task.", 'success')
-            
-            # Award points for Admin approval
-            utask.user_ref.points += 10
-            pt = Point(user_id=utask.user_id, amount=10, source=f"Admin Verified: {utask.task_ref.title}")
-            db.session.add(pt)
-
-        elif action == 'reject':
-            utask.status = 'In Progress'
-            flash(f"Proof rejected. {utask.user_ref.name} must resubmit.", 'warning')
-
+    if action == 'approve':
+        utask.status = 'Completed'
+        # Award the 10 points for the individual task
+        utask.user_ref.points += 10
+        pt = Point(user_id=utask.user_id, amount=10, source=f"Admin Verified: {utask.task_ref.title}")
+        db.session.add(pt)
         db.session.commit()
-        return redirect(url_for('admin_task_reviews'))
+        
+        # Check if this approval finishes their daily 3 tasks
+        bonus = check_daily_completion(utask.user_ref)
+        if bonus:
+            flash(f"Proof approved! This completed their daily 3. They were awarded a +{bonus} point bonus!", 'success')
+        else:
+            flash(f"Proof approved for {utask.user_ref.name}'s task. +10 Points allocated!", 'success')
+
+    elif action == 'reject':
+        utask.status = 'In Progress'
+        flash(f"Proof rejected. {utask.user_ref.name} has been notified to resubmit.", 'warning')
+
+    db.session.commit()
+    return redirect(url_for('admin_task_reviews'))
 
     return app
 
