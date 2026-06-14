@@ -323,33 +323,22 @@ def create_app():
     def verify_submission(submission_id, action):
         if not current_user.is_admin:
             abort(403)
+            
         submission = Submission.query.get_or_404(submission_id)
-    
-    if not submission.verified:
-        if action == 'approve':
-            submission.verified = True
-            student = User.query.get(submission.user_id)
-            student.points += 50
-            award_points(student.id, 50, f"Challenge Verified: {submission.challenge_ref.title}")
-            
-            top_3_users = User.query.order_by(User.points.desc()).limit(3).all()
-            if student in top_3_users:
-                winner_badge = Badge.query.filter_by(title='Weekly Winner').first()
-                if winner_badge and winner_badge not in student.badges:
-                    student.badges.append(winner_badge)
-                    flash(f"{student.name} is in the Top 3 and earned the Weekly Winner badge!", 'warning')
-            
-            db.session.commit()
-            flash('Submission verified and 50 points awarded!', 'success')
-            
-        elif action == 'reject':
-            db.session.delete(submission)
-            db.session.commit()
-            flash('Submission rejected and removed so the student can submit a valid proof.', 'warning')
-    else:
-        flash('This submission was already verified.', 'info')
         
-    return redirect(url_for('view_submissions', challenge_id=submission.challenge_id))
+        if action == 'approve':
+            submission.status = 'Approved'
+            # Award points upon admin approval (Resolves the double point bug!)
+            submission.user.points += 50
+            pt = Point(user_id=submission.user_id, amount=50, source=f"Challenge Approved: {submission.challenge.title}")
+            db.session.add(pt)
+            flash(f"Submission approved! 50 points awarded to {submission.user.name}.", "success")
+        elif action == 'reject':
+            submission.status = 'Rejected'
+            flash(f"Submission from {submission.user.name} has been rejected.", "warning")
+            
+        db.session.commit()
+        return redirect(url_for('admin_dashboard'))
 
     # ------------------------------------------------------------------ 
     # PROFILE ROUTES
