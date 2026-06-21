@@ -1,41 +1,29 @@
 {% extends "base.html" %}
 {% block content %}
+<div class="container mt-4">
+    <div class="alert alert-warning border-0 shadow-sm p-4 mb-4" role="alert">
+        <h4 class="alert-heading fw-bold">🏆 Weekly Titan Shoutout!</h4>
+        <p class="mb-0">Congratulations to <strong>Team FCI</strong> for dominating the leaderboard last week! Keep moving, Titans!</p>
+    </div>
 
-<div class="d-flex justify-content-between align-items-center mb-4">
-    <div>
-        <h2 class="fw-bold mb-0">Hey, {{ current_user.name.split()[0] }} 👋</h2>
-        <p class="text-muted small mb-0">Here's your activity overview</p>
-    </div>
-    <span class="badge bg-secondary px-3 py-2">{{ current_user.faculty }}</span>
-</div>
-
-<!-- Stat row -->
-<div class="row g-3 mb-4">
-    <div class="col-6 col-md-3">
-        <div class="card stat-card" style="background:linear-gradient(135deg,#1a73e8,#0d47a1);">
-            <div class="stat-number">{{ current_user.points }}</div>
-            <div class="stat-label">Total Points</div>
-        </div>
-    </div>
-    <div class="col-6 col-md-3">
-        <div class="card stat-card" style="background:linear-gradient(135deg,#e63946,#9b1b30);">
-            <div class="stat-number">🔥 {{ current_user.streak }}</div>
-            <div class="stat-label">Day Streak</div>
-        </div>
-    </div>
-    <div class="col-6 col-md-3">
-        <div class="card stat-card" style="background:linear-gradient(135deg,#2d9e6b,#1a5c3f);">
-            <div class="stat-number">{{ current_user.badges|length }}</div>
-            <div class="stat-label">Badges Earned</div>
-        </div>
-    </div>
-    <div class="col-6 col-md-3">
-        <div class="card stat-card" style="background:linear-gradient(135deg,#f4a62a,#b87100);">
-            <div class="stat-number">{{ current_user.tasks|selectattr('status','equalto','Completed')|list|length }}</div>
-            <div class="stat-label">Tasks Completed</div>
-        </div>
-    </div>
-</div>
+    <div class="row">
+        <div class="col-md-8">
+            <div class="row mb-4">
+                <div class="col-md-6">
+                    <div class="card border-0 shadow-sm bg-dark text-white p-4">
+                        <h5 class="text-uppercase small fw-bold">Daily Streak</h5>
+                        <h1 class="display-4 fw-bold mb-0">🔥 5</h1>
+                        <p class="mb-0 small">Days strong! Don't break it.</p>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="card border-0 shadow-sm bg-danger text-white p-4">
+                        <h5 class="text-uppercase small fw-bold">Leaderboard Rank</h5>
+                        <h1 class="display-4 fw-bold mb-0">#12</h1>
+                        <p class="mb-0 small">Top 15% of MMU students.</p>
+                    </div>
+                </div>
+            </div>
 
 <!-- Quick links -->
 <div class="row g-3">

@@ -101,7 +101,27 @@ def create_app():
     @app.route('/')
     def home():
         if current_user.is_authenticated:
-            return render_template('dashboard.html', title='Dashboard')
+            # --- AAHTITIYA'S WEEK 8: MONDAY WINNER ANNOUNCEMENT ---
+            # Python's weekday() returns 0 for Monday, 1 for Tuesday, etc.
+            is_monday = date.today().weekday() == 0
+            recent_closed_challenge = None
+            top_winners = []
+            
+            # If today is Monday, fetch the latest closed challenge and its top 3 verified winners
+            if is_monday:
+                recent_closed_challenge = Challenge.query.filter_by(is_closed=True).order_by(Challenge.deadline.desc()).first()
+                if recent_closed_challenge:
+                    top_winners = Submission.query.filter_by(
+                        challenge_id=recent_closed_challenge.id, 
+                        verified=True
+                    ).limit(3).all()
+
+            return render_template('dashboard.html', 
+                                   title='Dashboard', 
+                                   is_monday=is_monday, 
+                                   recent_challenge=recent_closed_challenge, 
+                                   winners=top_winners)
+            
         return render_template('home.html')
 
     @app.route('/register', methods=['GET', 'POST'])
@@ -733,13 +753,18 @@ def create_app():
     @app.route('/challenges')
     @login_required
     def student_challenges():
+<<<<<<< HEAD
         challenges = Challenge.query.all()
+=======
+        challenges = Challenge.query.order_by(Challenge.deadline.desc()).all()
+>>>>>>> bfbb0dafae85ae22d2162689d13851f5fdd4774d
         return render_template('student_challenges.html', title='Weekly Challenges', challenges=challenges)
 
     @app.route('/challenges/<int:challenge_id>', methods=['GET', 'POST'])
     @login_required
     def challenge_detail(challenge_id):
         challenge = Challenge.query.get_or_404(challenge_id)
+<<<<<<< HEAD
         existing_submission = Submission.query.filter_by(
             user_id=current_user.id,
             challenge_id=challenge_id
@@ -750,6 +775,35 @@ def create_app():
             proof = request.files.get('proof_file')
             if proof and result:
                 file_fn = save_upload(proof)
+=======
+        
+        existing_submission = Submission.query.filter_by(user_id=current_user.id, challenge_id=challenge.id).first()
+        submissions = Submission.query.filter_by(challenge_id=challenge.id).order_by(Submission.submitted_at.desc()).all()
+
+        if request.method == 'POST':
+            if challenge.is_closed:
+                flash('This challenge is closed to new submissions.', 'danger')
+                return redirect(url_for('challenge_detail', challenge_id=challenge.id))
+
+            if existing_submission:
+                flash('You have already submitted your attempt for this challenge!', 'warning')
+                return redirect(url_for('challenge_detail', challenge_id=challenge.id))
+
+            result_text = request.form.get('result')
+            proof_file = request.files.get('proof_file')
+
+            if result_text and proof_file and proof_file.filename != '':
+                random_hex = secrets.token_hex(8)
+                _, f_ext = os.path.splitext(proof_file.filename)
+                file_fn = random_hex + f_ext
+                
+                uploads_dir = os.path.join(app.root_path, 'static/uploads')
+                os.makedirs(uploads_dir, exist_ok=True)
+                
+                file_path = os.path.join(uploads_dir, file_fn)
+                proof_file.save(file_path)
+
+>>>>>>> bfbb0dafae85ae22d2162689d13851f5fdd4774d
                 new_submission = Submission(
                     user_id=current_user.id,
                     challenge_id=challenge_id,
