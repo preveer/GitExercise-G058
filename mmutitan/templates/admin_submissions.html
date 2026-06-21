@@ -13,33 +13,41 @@
 
 <div class="row g-3">
     {% if submissions %}
-    {% for sub in submissions %}
-    <div class="col-md-4">
-        <div class="card h-100 shadow-sm {% if sub.verified %}border-success border-2{% else %}border-warning border-2{% endif %}">
-            <img src="{{ url_for('static', filename='uploads/' + sub.proof_file) }}"
-                 class="card-img-top" alt="Proof"
-                 style="height:180px;object-fit:cover;">
-            <div class="card-body">
-                <h6 class="fw-bold mb-1">{{ sub.user_ref.name }}</h6>
-                <p class="small mb-1"><strong>Result:</strong> {{ sub.result }}</p>
-                <p class="small text-muted">Submitted: {{ sub.submitted_at.strftime('%b %d, %I:%M %p') }}</p>
+        {% for sub in submissions %}
+        <div class="col-md-4">
+            <div class="card h-100 shadow-sm {% if sub.verified %}border-success border-2{% else %}border-warning border-2{% endif %}">
+                <img src="{{ url_for('static', filename='uploads/' + sub.proof_file) }}" class="card-img-top" alt="Proof" style="height:180px;object-fit:cover;">
+                <div class="card-body">
+                    <h6 class="fw-bold mb-1">{{ sub.user_ref.name }}</h6>
+                    <p class="small mb-1"><strong>Result:</strong> {{ sub.result }}</p>
+                    <p class="small text-muted">Submitted: {{ sub.submitted_at.strftime('%b %d, %I:%M %p') }}</p>
 
-                {% if sub.verified %}
-                <span class="badge bg-success w-100 py-2 mt-1">✓ Verified</span>
-                {% else %}
-    <div class="d-flex gap-2 mt-2">
-        <form action="{{ url_for('verify_submission', submission_id=sub.id, action='approve') }}" method="POST" class="w-50">
-            <button type="submit" class="btn btn-warning w-100 fw-bold btn-sm">
-                <i class="fa fa-check me-1"></i>Verify
-            </button>
-        </form>
-        <form action="{{ url_for('verify_submission', submission_id=sub.id, action='reject') }}" method="POST" class="w-50">
-            <button type="submit" class="btn btn-outline-danger w-100 fw-bold btn-sm">
-                <i class="fa fa-times me-1"></i>Reject
-            </button>
-        </form>
-    </div>
-{% endif %}
+                    {% if sub.verified %}
+                        <span class="badge bg-success w-100 py-2 mt-1">✓ Verified</span>
+                    {% else %}
+                        <div class="d-flex gap-2 mt-1">
+                            <form action="{{ url_for('verify_submission', submission_id=sub.id, action='approve') }}" method="POST" class="w-50">
+                                <button type="submit" class="btn btn-warning w-100 fw-bold btn-sm">
+                                    <i class="fa fa-check me-1"></i>Verify
+                                </button>
+                            </form>
+                            <form action="{{ url_for('verify_submission', submission_id=sub.id, action='reject') }}" method="POST" class="w-50">
+                                <button type="submit" class="btn btn-outline-danger w-100 fw-bold btn-sm">
+                                    <i class="fa fa-times me-1"></i>Reject
+                                </button>
+                            </form>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    {% else %}
+        <div class="col-12 text-center py-5">
+            <div style="font-size:3rem;">📭</div>
+            <h4 class="text-muted mt-2">No submissions yet.</h4>
+        </div>
+    {% endif %}
 </div>
 
 {% endblock %}

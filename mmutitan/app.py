@@ -16,6 +16,7 @@ from forms import (BadgeForm, RegistrationForm, LoginForm, EventForm,
                    BuddyAvailabilityForm)
 from config import Config
 
+
 def create_app():
     app = Flask(__name__)
     app.config.from_object(Config)
@@ -60,7 +61,7 @@ def create_app():
             if streak_badge and streak_badge not in user.badges:
                 user.badges.append(streak_badge)
                 flash("You've earned the Streak Master badge!", 'warning')
-    
+
     def check_daily_completion(user):
         """Checks if all 3 daily tasks are Complete and awards the 50 points."""
         today = date.today()
@@ -68,7 +69,7 @@ def create_app():
             UserTask.user_id == user.id,
             db.func.date(UserTask.date_accepted) == today
         ).all()
-    
+        
         # Check if they have 3 tasks and ALL are marked 'Completed'
         if len(all_today) == 3 and all(ut.status == 'Completed' for ut in all_today):
             # Ensure we don't award the daily 50 points twice in one day
@@ -77,14 +78,14 @@ def create_app():
                 Point.source.like('Daily Tasks%'),
                 db.func.date(Point.awarded_at) == today
             ).first()
-        
+            
             if not already_awarded:
                 base_points = 50
                 source_label = "Daily Tasks"
                 if user.streak >= 7:
                     base_points = int(base_points * 1.5)
                     source_label = "Daily Tasks (7-Day Streak Bonus)"
-            
+                
                 award_points(user.id, base_points, source_label)
                 user.points += base_points
                 user.streak += 1
@@ -92,7 +93,7 @@ def create_app():
                 db.session.commit()
                 return base_points
         return 0
-    
+
     # ------------------------------------------------------------------ 
     # MAIN ROUTES
     # ------------------------------------------------------------------ 
@@ -123,7 +124,7 @@ def create_app():
             if form.picture.data and form.picture.data.filename:
                 user.profile_photo = save_picture(form.picture.data)
 
-            # NEW ADDITION: Automatic Admin Assignment for 3 specific emails
+            # Automatic Admin Assignment for 3 specific emails
             admin_emails = ['preveeradmin@gmail.com', 'luthraadmin@gmail.com', 'aahtiadmin@gmail.com']
             if user.email.lower() in admin_emails:
                 user.is_admin = True
@@ -318,7 +319,7 @@ def create_app():
     # ADMIN - SUBMISSION VERIFICATION
     # ------------------------------------------------------------------ 
 
-    @app.route('/admin/submissions/<int:submission_id>/<action>', methods=['POST'])
+    @app.route('/admin/submissions/<int:submission_id>/<string:action>', methods=['POST'])
     @login_required
     def verify_submission(submission_id, action):
         if not current_user.is_admin:
@@ -327,18 +328,27 @@ def create_app():
         submission = Submission.query.get_or_404(submission_id)
         
         if action == 'approve':
-            submission.status = 'Approved'
-            # Award points upon admin approval (Resolves the double point bug!)
-            submission.user.points += 50
-            pt = Point(user_id=submission.user_id, amount=50, source=f"Challenge Approved: {submission.challenge.title}")
-            db.session.add(pt)
-            flash(f"Submission approved! 50 points awarded to {submission.user.name}.", "success")
-        elif action == 'reject':
-            submission.status = 'Rejected'
-            flash(f"Submission from {submission.user.name} has been rejected.", "warning")
+            submission.verified = True
+            student = User.query.get(submission.user_id)
+            student.points += 50
+            award_points(student.id, 50, f"Challenge Verified: {submission.challenge_ref.title}")
             
-        db.session.commit()
-        return redirect(url_for('admin_dashboard'))
+            top_3_users = User.query.order_by(User.points.desc()).limit(3).all()
+            if student in top_3_users:
+                winner_badge = Badge.query.filter_by(title='Weekly Winner').first()
+                if winner_badge and winner_badge not in student.badges:
+                    student.badges.append(winner_badge)
+                    flash(f"{student.name} is in the Top 3 and earned the Weekly Winner badge!", 'warning')
+            
+            db.session.commit()
+            flash(f"Submission approved! 50 points awarded to {student.name}.", "success")
+            
+        elif action == 'reject':
+            db.session.delete(submission)
+            db.session.commit()
+            flash("Submission has been rejected and removed.", "warning")
+            
+        return redirect(url_for('view_submissions', challenge_id=submission.challenge_id))
 
     # ------------------------------------------------------------------ 
     # PROFILE ROUTES
@@ -794,7 +804,7 @@ def create_app():
         return redirect(url_for('admin_dashboard'))
 
     # ------------------------------------------------------------------ 
-    # FEEDBACK ROUTES (Cards 31 & 32)
+    # FEEDBACK ROUTES
     # ------------------------------------------------------------------ 
 
     @app.route('/feedback', methods=['GET', 'POST'])
@@ -835,87 +845,88 @@ def create_app():
         return redirect(url_for('admin_feedback'))
 
     # ------------------------------------------------------------------ 
-    # SPORT BUDDY FINDER ROUTES (Card 30)
+    # SPORT BUDDY FINDER ROUTES
     # ------------------------------------------------------------------ 
 
-    @app.route('/buddy', methods=['GET', 'POST'])
+    @app.route('/buddy_finder', methods=['GET', 'POST'])
     @login_required
     def buddy_finder():
         form = BuddyAvailabilityForm()
 
         if request.method == 'GET':
-         if current_user.availability_days:
-            # Parse saved "Mon:Morning,Tue:Afternoon" data
-            for entry in current_user.availability_days.split(','):
-                if ':' in entry:
-                    day, time = entry.split(':')
-                    if day == 'Mon': form.mon_time.data = time
-                    elif day == 'Tue': form.tue_time.data = time
-                    elif day == 'Wed': form.wed_time.data = time
-                    elif day == 'Thu': form.thu_time.data = time
-                    elif day == 'Fri': form.fri_time.data = time
-                    elif day == 'Sat': form.sat_time.data = time
-                    elif day == 'Sun': form.sun_time.data = time
+            if current_user.availability_days:
+                # Parse saved "Mon:Morning,Tue:Afternoon" data
+                for entry in current_user.availability_days.split(','):
+                    if ':' in entry:
+                        day, time_val = entry.split(':', 1)
+                        if day == 'Mon': form.mon_time.data = time_val
+                        elif day == 'Tue': form.tue_time.data = time_val
+                        elif day == 'Wed': form.wed_time.data = time_val
+                        elif day == 'Thu': form.thu_time.data = time_val
+                        elif day == 'Fri': form.fri_time.data = time_val
+                        elif day == 'Sat': form.sat_time.data = time_val
+                        elif day == 'Sun': form.sun_time.data = time_val
 
-    if form.validate_on_submit():
-        avail = []
-        if form.mon_time.data: avail.append(f"Mon:{form.mon_time.data}")
-        if form.tue_time.data: avail.append(f"Tue:{form.tue_time.data}")
-        if form.wed_time.data: avail.append(f"Wed:{form.wed_time.data}")
-        if form.thu_time.data: avail.append(f"Thu:{form.thu_time.data}")
-        if form.fri_time.data: avail.append(f"Fri:{form.fri_time.data}")
-        if form.sat_time.data: avail.append(f"Sat:{form.sat_time.data}")
-        if form.sun_time.data: avail.append(f"Sun:{form.sun_time.data}")
-        
-        current_user.availability_days = ','.join(avail)
-        db.session.commit()
-        flash('Your detailed weekly schedule has been saved!', 'success')
-        return redirect(url_for('buddy_finder'))
+        if form.validate_on_submit():
+            avail = []
+            if form.mon_time.data and form.mon_time.data != 'Unavailable': avail.append(f"Mon:{form.mon_time.data}")
+            if form.tue_time.data and form.tue_time.data != 'Unavailable': avail.append(f"Tue:{form.tue_time.data}")
+            if form.wed_time.data and form.wed_time.data != 'Unavailable': avail.append(f"Wed:{form.wed_time.data}")
+            if form.thu_time.data and form.thu_time.data != 'Unavailable': avail.append(f"Thu:{form.thu_time.data}")
+            if form.fri_time.data and form.fri_time.data != 'Unavailable': avail.append(f"Fri:{form.fri_time.data}")
+            if form.sat_time.data and form.sat_time.data != 'Unavailable': avail.append(f"Sat:{form.sat_time.data}")
+            if form.sun_time.data and form.sun_time.data != 'Unavailable': avail.append(f"Sun:{form.sun_time.data}")
+            
+            current_user.availability_days = ','.join(avail) if avail else None
+            db.session.commit()
+            flash('Your detailed weekly schedule has been saved!', 'success')
+            return redirect(url_for('buddy_finder'))
 
-    # Matchmaking Algorithm
-    matches = []
-    if current_user.availability_days and current_user.sport_preferences:
-        my_avail = current_user.availability_days.split(',')
-        my_sport = current_user.sport_preferences.lower()
+        # Matchmaking Algorithm
+        matches = []
+        if current_user.availability_days and current_user.sport_preferences:
+            my_avail = current_user.availability_days.split(',')
+            my_sport = current_user.sport_preferences.lower()
 
-        candidates = User.query.filter(
-            User.id != current_user.id,
-            User.is_banned == False,
-            User.availability_days != None,
-            User.availability_days != '',
-            User.sport_preferences != None,
-            User.sport_preferences != ''
+            candidates = User.query.filter(
+                User.id != current_user.id,
+                User.is_banned == False,
+                User.availability_days.isnot(None),
+                User.availability_days != '',
+                User.sport_preferences.isnot(None),
+                User.sport_preferences != ''
+            ).all()
+
+            for candidate in candidates:
+                if my_sport not in candidate.sport_preferences.lower():
+                    continue
+                
+                their_avail = candidate.availability_days.split(',')
+                
+                # Find overlapping day+time exact matches
+                shared = list(set(my_avail).intersection(set(their_avail)))
+                if not shared:
+                    continue
+
+                existing = BuddyRequest.query.filter(
+                    ((BuddyRequest.sender_id == current_user.id) & (BuddyRequest.receiver_id == candidate.id)) |
+                    ((BuddyRequest.sender_id == candidate.id) & (BuddyRequest.receiver_id == current_user.id))
+                ).first()
+
+                matches.append({
+                    'user': candidate,
+                    'shared_slots': shared,
+                    'existing_request': existing
+                })
+
+        pending_requests = BuddyRequest.query.filter_by(receiver_id=current_user.id, status='Pending').all()
+        confirmed = BuddyRequest.query.filter(
+            ((BuddyRequest.sender_id == current_user.id) | (BuddyRequest.receiver_id == current_user.id)),
+            BuddyRequest.status == 'Accepted'
         ).all()
 
-        for candidate in candidates:
-            if my_sport not in candidate.sport_preferences.lower():
-                continue
-            
-            their_avail = candidate.availability_days.split(',')
-            
-            # Find overlapping day+time exact matches
-            shared = list(set(my_avail).intersection(set(their_avail)))
-            if not shared:
-                continue
+        return render_template('buddy_finder.html', title='Sport Buddy Finder', form=form, matches=matches, pending_requests=pending_requests, confirmed=confirmed)
 
-            existing = BuddyRequest.query.filter(
-                ((BuddyRequest.sender_id == current_user.id) & (BuddyRequest.receiver_id == candidate.id)) |
-                ((BuddyRequest.sender_id == candidate.id) & (BuddyRequest.receiver_id == current_user.id))
-            ).first()
-
-            matches.append({
-                'user': candidate,
-                'shared_slots': shared,
-                'existing_request': existing
-            })
-
-    pending_requests = BuddyRequest.query.filter_by(receiver_id=current_user.id, status='Pending').all()
-    confirmed = BuddyRequest.query.filter(
-        ((BuddyRequest.sender_id == current_user.id) | (BuddyRequest.receiver_id == current_user.id)),
-        BuddyRequest.status == 'Accepted'
-    ).all()
-
-    return render_template('buddy_finder.html', title='Sport Buddy Finder', form=form, matches=matches, pending_requests=pending_requests, confirmed=confirmed)
 
     @app.route('/buddy/request/<int:receiver_id>', methods=['POST'])
     @login_required
@@ -929,11 +940,12 @@ def create_app():
         if existing:
             flash('A request already exists with this student.', 'info')
         else:
-            new_request = BuddyRequest(sender_id=current_user.id, receiver_id=receiver_id)
+            new_request = BuddyRequest(sender_id=current_user.id, receiver_id=receiver_id, status='Pending')
             db.session.add(new_request)
             db.session.commit()
             flash(f'Meetup request sent to {receiver.name}!', 'success')
         return redirect(url_for('buddy_finder'))
+
 
     @app.route('/buddy/respond/<int:request_id>/<string:action>', methods=['POST'])
     @login_required
@@ -967,32 +979,33 @@ def create_app():
     @app.route('/admin/task_reviews/<int:utask_id>/<action>', methods=['POST'])
     @login_required
     def verify_daily_task(utask_id, action):
-     if not current_user.is_admin:
-        abort(403)
+        if not current_user.is_admin:
+            abort(403)
 
-    utask = UserTask.query.get_or_404(utask_id)
+        utask = UserTask.query.get_or_404(utask_id)
 
-    if action == 'approve':
-        utask.status = 'Completed'
-        # Award the 10 points for the individual task
-        utask.user_ref.points += 10
-        pt = Point(user_id=utask.user_id, amount=10, source=f"Admin Verified: {utask.task_ref.title}")
-        db.session.add(pt)
+        if action == 'approve':
+            utask.status = 'Completed'
+            # Award the 10 points for the individual task
+            utask.user_ref.points += 10
+            pt = Point(user_id=utask.user_id, amount=10, source=f"Admin Verified: {utask.task_ref.title}")
+            db.session.add(pt)
+            db.session.commit()
+            
+            # Check if this approval finishes their daily 3 tasks
+            bonus = check_daily_completion(utask.user_ref)
+            
+            if bonus:
+                flash(f"Proof approved! This completed their daily 3. They were awarded a +{bonus} point bonus!", 'success')
+            else:
+                flash(f"Proof approved for {utask.user_ref.name}'s task. +10 Points allocated!", 'success')
+
+        elif action == 'reject':
+            utask.status = 'In Progress'
+            flash(f"Proof rejected. {utask.user_ref.name} has been notified to resubmit.", 'warning')
+
         db.session.commit()
-        
-        # Check if this approval finishes their daily 3 tasks
-        bonus = check_daily_completion(utask.user_ref)
-        if bonus:
-            flash(f"Proof approved! This completed their daily 3. They were awarded a +{bonus} point bonus!", 'success')
-        else:
-            flash(f"Proof approved for {utask.user_ref.name}'s task. +10 Points allocated!", 'success')
-
-    elif action == 'reject':
-        utask.status = 'In Progress'
-        flash(f"Proof rejected. {utask.user_ref.name} has been notified to resubmit.", 'warning')
-
-    db.session.commit()
-    return redirect(url_for('admin_task_reviews'))
+        return redirect(url_for('admin_task_reviews'))
 
     return app
 
