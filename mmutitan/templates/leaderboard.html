@@ -1,11 +1,13 @@
 {% extends "base.html" %}
 {% block content %}
 
+
 <div class="d-flex justify-content-between align-items-center mb-4">
     <div>
         <h2 class="fw-bold mb-0">Leaderboard</h2>
         <p class="text-muted small mb-0">Rankings across MMU Faculties</p>
     </div>
+
 
     <form action="{{ url_for('leaderboard') }}" method="GET" class="d-flex gap-2">
         <select name="faculty" class="form-select form-select-sm" style="width:160px;" onchange="this.form.submit()">
@@ -16,6 +18,7 @@
         </select>
     </form>
 </div>
+
 
 <div class="row g-4">
     <!-- Points Leaderboard -->
@@ -67,6 +70,7 @@
         </div>
     </div>
 
+
     <!-- Streak Leaderboard -->
     <div class="col-md-6">
         <div class="card shadow-sm">
@@ -116,5 +120,6 @@
         </div>
     </div>
 </div>
+
 
 {% endblock %}

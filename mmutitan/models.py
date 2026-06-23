@@ -2,12 +2,15 @@ from datetime import datetime
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import UserMixin, LoginManager
 
+
 db = SQLAlchemy()
 login_manager = LoginManager()
+
 
 @login_manager.user_loader
 def load_user(user_id):
     return User.query.get(int(user_id))
+
 
 # --- USER MODEL ---
 class User(db.Model, UserMixin):
@@ -28,6 +31,7 @@ class User(db.Model, UserMixin):
     availability_days = db.Column(db.String(100), nullable=True)   # e.g. "Mon,Wed,Fri"
     availability_time = db.Column(db.String(20), nullable=True)    # "Morning", "Afternoon", "Evening"
 
+
     # Relationships
     rsvps = db.relationship('RSVP', backref='user_ref', lazy=True, cascade="all, delete-orphan")
     usertasks = db.relationship('UserTask', backref='user_ref', lazy=True, cascade="all, delete-orphan")
@@ -40,6 +44,7 @@ class User(db.Model, UserMixin):
     received_requests = db.relationship('BuddyRequest', foreign_keys='BuddyRequest.receiver_id',
                                         backref='receiver', lazy=True, cascade="all, delete-orphan")
 
+
 # --- TASK MODEL ---
 class Task(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -49,7 +54,9 @@ class Task(db.Model):
     difficulty = db.Column(db.String(20), nullable=False)
     proof_required = db.Column(db.Boolean, default=False)
 
+
     usertasks = db.relationship('UserTask', backref='task_ref', lazy=True, cascade="all, delete-orphan")
+
 
 # --- USER TASK JOURNAL MODEL ---
 class UserTask(db.Model):
@@ -59,6 +66,7 @@ class UserTask(db.Model):
     status = db.Column(db.String(20), default='In Progress')
     proof_image = db.Column(db.String(20), nullable=True)
     date_accepted = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+
 
 # --- EVENT MODEL ---
 class Event(db.Model):
@@ -70,7 +78,9 @@ class Event(db.Model):
     time = db.Column(db.Time, nullable=False)
     max_capacity = db.Column(db.Integer, nullable=False)
 
+
     rsvps = db.relationship('RSVP', backref='event_ref', lazy=True, cascade="all, delete-orphan")
+
 
 # --- RSVP MODEL ---
 class RSVP(db.Model):
@@ -79,6 +89,7 @@ class RSVP(db.Model):
     event_id = db.Column(db.Integer, db.ForeignKey('event.id', ondelete='CASCADE'), nullable=False)
     waitlisted = db.Column(db.Boolean, default=False)
     checked_in = db.Column(db.Boolean, default=False)
+
 
 # --- CHALLENGE MODEL ---
 class Challenge(db.Model):
@@ -90,7 +101,9 @@ class Challenge(db.Model):
     scoring_criteria = db.Column(db.String(100), nullable=False)
     is_closed = db.Column(db.Boolean, default=False)
 
+
     submissions = db.relationship('Submission', backref='challenge_ref', lazy=True, cascade="all, delete-orphan")
+
 
 # --- SUBMISSION MODEL ---
 class Submission(db.Model):
@@ -102,6 +115,7 @@ class Submission(db.Model):
     verified = db.Column(db.Boolean, default=False)
     submitted_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
 
+
 # --- POINT HISTORY MODEL ---
 class Point(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -109,6 +123,7 @@ class Point(db.Model):
     amount = db.Column(db.Integer, nullable=False)
     source = db.Column(db.String(100), nullable=False)
     awarded_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+
 
 # --- STREAK TRACKER MODEL ---
 class Streak(db.Model):
@@ -118,6 +133,7 @@ class Streak(db.Model):
     highest_streak = db.Column(db.Integer, default=0)
     last_activity_date = db.Column(db.Date, nullable=True)
 
+
 # --- FEEDBACK MODEL (Cards 31 & 32) ---
 class Feedback(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -125,6 +141,7 @@ class Feedback(db.Model):
     submission_type = db.Column(db.String(20), nullable=False)
     message = db.Column(db.Text, nullable=False)
     submitted_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+
 
 # --- BUDDY REQUEST MODEL (Card 30) ---
 class BuddyRequest(db.Model):

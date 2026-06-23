@@ -19,13 +19,9 @@ from forms import (RegistrationForm, LoginForm, EventForm,
                    BuddyAvailabilityForm)
 from config import Config
 
-
-
-
 # ------------------------------------------------------------------
 # ADMIN DECORATOR  (Reduction 1 — replaces ~15 repeated if-blocks)
 # ------------------------------------------------------------------
-
 
 def admin_required(f):
     @wraps(f)
@@ -36,25 +32,18 @@ def admin_required(f):
         return f(*args, **kwargs)
     return decorated_function
 
-
-
-
 def create_app():
     app = Flask(__name__)
     app.config.from_object(Config)
     db.init_app(app)
     login_manager.init_app(app)
     login_manager.login_view = 'login'
-
-
     with app.app_context():
         db.create_all()
-
 
     # ------------------------------------------------------------------
     # HELPER FUNCTIONS
     # ------------------------------------------------------------------
-
 
     def save_picture(form_picture):
         random_hex = secrets.token_hex(8)
@@ -65,7 +54,6 @@ def create_app():
         form_picture.save(picture_path)
         return picture_fn
 
-
     def save_upload(form_file):
         random_hex = secrets.token_hex(8)
         _, f_ext = os.path.splitext(form_file.filename)
@@ -75,12 +63,10 @@ def create_app():
         form_file.save(file_path)
         return file_fn
 
-
     def award_points(user_id, amount, source):
         """Creates a Point log entry. Caller must commit."""
         new_point = Point(user_id=user_id, amount=amount, source=source)
         db.session.add(new_point)
-
 
     def check_daily_completion(user):
         """Checks if all 3 daily tasks are Complete and awards the 50 points."""
@@ -90,14 +76,12 @@ def create_app():
             db.func.date(UserTask.date_accepted) == today
         ).all()
 
-
         if len(all_today) == 3 and all(ut.status == 'Completed' for ut in all_today):
             already_awarded = Point.query.filter(
                 Point.user_id == user.id,
                 Point.source.like('Daily Tasks%'),
                 db.func.date(Point.awarded_at) == today
             ).first()
-
 
             if not already_awarded:
                 base_points = 50
@@ -106,7 +90,6 @@ def create_app():
                     base_points = int(base_points * 1.5)
                     source_label = "Daily Tasks (7-Day Streak Bonus)"
 
-
                 award_points(user.id, base_points, source_label)
                 user.points += base_points
                 user.streak += 1
@@ -114,11 +97,9 @@ def create_app():
                 return base_points
         return 0
 
-
     # ------------------------------------------------------------------
     # MAIN ROUTES
     # ------------------------------------------------------------------
-
 
     @app.route('/')
     def home():
@@ -989,3 +970,4 @@ def create_app():
 if __name__ == '__main__':
     app = create_app()
     app.run(debug=True)
+

@@ -12,6 +12,8 @@
                     {{ form.hidden_tag() }}
 
 
+
+
                     <div class="row mb-3">
                         <div class="col-md-6 mb-3 mb-md-0">
                             {{ form.name.label }}
@@ -28,6 +30,8 @@
                             {% endfor %}
                         </div>
                     </div>
+
+
 
 
                     <div class="row mb-3">
@@ -48,16 +52,22 @@
                     </div>
 
 
+
+
                     <div class="mb-3">
                         {{ form.faculty.label }}
                         {{ form.faculty(class="form-select") }}
                     </div>
 
 
+
+
                     <div class="mb-3">
                         {{ form.sport_preferences.label }}
                         {{ form.sport_preferences(class="form-control", placeholder="e.g. Badminton, Football, Gym") }}
                     </div>
+
+
 
 
                     <div class="mb-4">
@@ -68,6 +78,8 @@
                             <small class="text-danger">{{ error }}</small>
                         {% endfor %}
                     </div>
+
+
 
 
                     <div class="d-grid">

@@ -1,10 +1,12 @@
 {% extends "base.html" %}
 {% block content %}
 
+
 <div class="mb-4">
     <h2 class="fw-bold mb-0">Campus Sporting Events</h2>
     <p class="text-muted small">RSVP to events and earn bonus check-in points</p>
 </div>
+
 
 <div class="row g-3">
     {% for event in events %}
@@ -14,12 +16,14 @@
                 <span class="badge bg-danger mb-2">{{ event.sport_type }}</span>
                 <h5 class="fw-bold mt-1 mb-1">{{ event.name }}</h5>
 
+
                 <p class="text-muted small mb-2">
                     <i class="fa fa-map-marker-alt me-1"></i>{{ event.venue }}
                 </p>
                 <p class="text-muted small mb-3">
                     <i class="fa fa-calendar me-1"></i>{{ event.date }} at {{ event.time }}
                 </p>
+
 
                 {% if spots_left[event.id] > 0 %}
                 <p class="small mb-3">
@@ -31,8 +35,10 @@
                 {% endif %}
             </div>
 
+
             <div class="card-footer bg-white border-0 pb-3">
                 {% set my_rsvp = user_rsvps.get(event.id) %}
+
 
                 {% if my_rsvp %}
                     {% if my_rsvp.waitlisted %}
@@ -54,6 +60,7 @@
                         <button type="submit" class="btn btn-outline-danger w-100 btn-sm">Cancel RSVP</button>
                     </form>
                     {% endif %}
+
 
                 {% elif spots_left[event.id] <= 0 %}
                 <form action="{{ url_for('rsvp', event_id=event.id) }}" method="POST">
@@ -79,5 +86,6 @@
     </div>
     {% endfor %}
 </div>
+
 
 {% endblock %}

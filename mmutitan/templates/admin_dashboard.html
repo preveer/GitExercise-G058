@@ -1,8 +1,10 @@
 {% extends "base.html" %}
 {% block content %}
 
+
 <div class="container mt-4">
     <h2 class="fw-bold mb-4">Admin Control Panel</h2>
+
 
     <div class="row mb-5 g-3">
         <div class="col-md-4">
@@ -31,6 +33,7 @@
         </div>
     </div>
 
+
     <h5 class="fw-bold mb-3">Management Modules</h5>
     <div class="row g-4 mb-5">
         <div class="col-md-4">
@@ -42,6 +45,7 @@
             </div>
         </div>
 
+
         <div class="col-md-4">
             <div class="card shadow-sm p-4 h-100 border-0">
                 <div class="mb-2" style="font-size:1.6rem;">📷</div>
@@ -50,6 +54,7 @@
                 <a href="{{ url_for('admin_task_reviews') }}" class="btn btn-dark btn-sm mt-auto w-100">Review Daily Proofs</a>
             </div>
         </div>
+
 
         <div class="col-md-4">
             <div class="card shadow-sm p-4 h-100 border-0">
@@ -60,6 +65,7 @@
             </div>
         </div>
 
+
         <div class="col-md-4">
             <div class="card shadow-sm p-4 h-100 border-0">
                 <div class="mb-2" style="font-size:1.6rem;">📅</div>
@@ -68,6 +74,7 @@
                 <a href="{{ url_for('manage_events') }}" class="btn btn-dark btn-sm mt-auto w-100">Manage Events</a>
             </div>
         </div>
+
 
         <div class="col-md-4">
             <div class="card shadow-sm p-4 h-100 border-0">
@@ -78,6 +85,7 @@
             </div>
         </div>
 
+
         <div class="col-md-4">
             <div class="card shadow-sm p-4 h-100 border-0">
                 <div class="mb-2" style="font-size:1.6rem;">🏆</div>
@@ -86,6 +94,7 @@
                 <a href="{{ url_for('admin_challenges') }}" class="btn btn-dark btn-sm mt-auto w-100">Manage Challenges</a>
             </div>
         </div>
+
 
         <div class="col-md-4">
             <div class="card shadow-sm p-4 h-100 border-0 bg-light">
@@ -101,5 +110,6 @@
         </div>
     </div>
 </div>
+
 
 {% endblock %}

@@ -10,6 +10,7 @@
                 <form method="POST" enctype="multipart/form-data">
                     {{ form.hidden_tag() }}
 
+
                     <div class="row mb-3">
                         <div class="col-md-6 mb-3 mb-md-0">
                             {{ form.name.label }}
@@ -27,6 +28,7 @@
                         </div>
                     </div>
 
+
                     <div class="row mb-3">
                         <div class="col-md-6 mb-3 mb-md-0">
                             {{ form.faculty.label }}
@@ -38,11 +40,13 @@
                         </div>
                     </div>
 
+
                     <div class="mb-4">
                         {{ form.picture.label }}
                         {{ form.picture(class="form-control") }}
                         <small class="text-muted">Leave blank to keep your current photo.</small>
                     </div>
+
 
                     <div class="d-flex gap-2">
                         {{ form.submit(class="btn btn-danger fw-bold px-4") }}

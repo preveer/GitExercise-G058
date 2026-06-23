@@ -1,6 +1,7 @@
 {% extends "base.html" %}
 {% block content %}
 
+
 <div class="row align-items-center py-5">
     <div class="col-md-7">
         <p class="text-danger fw-bold small text-uppercase mb-2" style="letter-spacing:2px;">MMU Campus Fitness Platform</p>
@@ -28,6 +29,7 @@
     </div>
 </div>
 
+
 {% if not current_user.is_authenticated %}
 <div class="row g-4 mt-2">
     <div class="col-md-4">
@@ -46,5 +48,6 @@
     </div>
 </div>
 {% endif %}
+
 
 {% endblock %}

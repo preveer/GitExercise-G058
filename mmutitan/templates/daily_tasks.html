@@ -2,20 +2,16 @@
 {% block content %}
 
 
-
-
 <div class="d-flex justify-content-between align-items-center mb-4">
     <div>
         <h2 class="fw-bold mb-0">Daily Titan Quests</h2>
         <p class="text-muted small mb-0">Complete all 3 to earn points and extend your streak</p>
     </div>
     <div class="d-flex gap-2">
-        <span class="badge bg-warning text-dark px-3 py-2-6">🔥 {{ current_user.streak }} Day Streak</span>
+        <span class="badge bg-warning text-dark px-3 py-2">🔥 {{ current_user.streak }} Day Streak</span>
         <span class="badge bg-primary px-3 py-2 fs-6">⭐ {{ current_user.points }} pts</span>
     </div>
 </div>
-
-
 
 
 <div class="row g-3">
@@ -75,8 +71,6 @@
     </div>
     {% endfor %}
 </div>
-
-
 
 
 {% endblock %}

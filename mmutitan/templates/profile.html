@@ -3,6 +3,8 @@
 <div class="row g-4">
 
 
+
+
     <div class="col-md-4">
         <div class="card text-center p-4 mb-3">
             <img src="{{ url_for('static', filename='profile_pics/' + user.profile_photo) }}"
@@ -12,10 +14,14 @@
             <p class="text-muted small mb-3">{{ user.faculty }}</p>
 
 
+
+
             <div class="d-flex justify-content-center gap-2 flex-wrap mb-3">
                 <span class="badge bg-danger px-3 py-2">⭐ {{ user.points }} pts</span>
                 <span class="badge bg-warning text-dark px-3 py-2">🔥 {{ user.streak }} day streak</span>
             </div>
+
+
 
 
             {% if user.sport_preferences %}
@@ -23,6 +29,8 @@
                 <i class="fa fa-running me-1"></i> {{ user.sport_preferences }}
             </p>
             {% endif %}
+
+
 
 
             <div class="d-grid gap-2">
@@ -35,6 +43,8 @@
             </div>
         </div>
     </div>
+
+
 
 
     <div class="col-md-8">
@@ -71,11 +81,15 @@
         </div>
 
 
+
+
         <div class="card shadow border-0 p-4 mb-4 mt-4">
             <h5 class="fw-bold border-bottom pb-2">Sport Preferences</h5>
             <p>{{ user.sport_preferences or "No preferences set yet." }}</p>
         </div>
     </div>
+
+
 
 
 </div>
