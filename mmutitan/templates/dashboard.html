@@ -11,28 +11,22 @@
 
 <!-- Stat row -->
 <div class="row g-3 mb-4">
-    <div class="col-6 col-md-3">
+    <div class="col-6 col-md-4">
         <div class="card stat-card" style="background:linear-gradient(135deg,#1a73e8,#0d47a1);">
             <div class="stat-number">{{ current_user.points }}</div>
             <div class="stat-label">Total Points</div>
         </div>
     </div>
-    <div class="col-6 col-md-3">
+    <div class="col-6 col-md-4">
         <div class="card stat-card" style="background:linear-gradient(135deg,#e63946,#9b1b30);">
             <div class="stat-number">🔥 {{ current_user.streak }}</div>
             <div class="stat-label">Day Streak</div>
         </div>
     </div>
-    <div class="col-6 col-md-3">
-        <div class="card stat-card" style="background:linear-gradient(135deg,#2d9e6b,#1a5c3f);">
-            <div class="stat-number">{{ current_user.badges|length }}</div>
-            <div class="stat-label">Badges Earned</div>
-        </div>
-    </div>
-    <div class="col-6 col-md-3">
+    <div class="col-6 col-md-4">
         <div class="card stat-card" style="background:linear-gradient(135deg,#f4a62a,#b87100);">
-            <div class="stat-number">{{ current_user.tasks|selectattr('status','equalto','Completed')|list|length }}</div>
-            <div class="stat-label">Tasks Completed</div>
+        <div class="stat-number">{{ current_user.usertasks|selectattr('status','equalto','Completed')|list|length }}</div>            
+        <div class="stat-label">Tasks Completed</div>
         </div>
     </div>
 </div>

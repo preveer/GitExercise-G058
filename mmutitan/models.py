@@ -9,12 +9,6 @@ login_manager = LoginManager()
 def load_user(user_id):
     return User.query.get(int(user_id))
 
-# --- MANY-TO-MANY RELATIONSHIP TABLE FOR USER BADGES ---
-user_badges = db.Table('user_badges',
-    db.Column('user_id', db.Integer, db.ForeignKey('user.id', ondelete='CASCADE'), primary_key=True),
-    db.Column('badge_id', db.Integer, db.ForeignKey('badge.id', ondelete='CASCADE'), primary_key=True)
-)
-
 # --- USER MODEL ---
 class User(db.Model, UserMixin):
     id = db.Column(db.Integer, primary_key=True)
@@ -38,7 +32,6 @@ class User(db.Model, UserMixin):
     rsvps = db.relationship('RSVP', backref='user_ref', lazy=True, cascade="all, delete-orphan")
     usertasks = db.relationship('UserTask', backref='user_ref', lazy=True, cascade="all, delete-orphan")
     submissions = db.relationship('Submission', backref='user_ref', lazy=True, cascade="all, delete-orphan")
-    badges = db.relationship('Badge', secondary=user_badges, backref=db.backref('users', lazy='dynamic'))
     point_history = db.relationship('Point', backref='user_ref', lazy=True, cascade="all, delete-orphan")
     streak_history = db.relationship('Streak', backref='user_ref', lazy=True, cascade="all, delete-orphan")
     feedbacks = db.relationship('Feedback', backref='user_ref', lazy=True, cascade="all, delete-orphan")
@@ -66,13 +59,6 @@ class UserTask(db.Model):
     status = db.Column(db.String(20), default='In Progress')
     proof_image = db.Column(db.String(20), nullable=True)
     date_accepted = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
-
-# --- BADGE MODEL ---
-class Badge(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    title = db.Column(db.String(100), unique=True, nullable=False)
-    description = db.Column(db.Text, nullable=False)
-    category = db.Column(db.String(50), nullable=False)
 
 # --- EVENT MODEL ---
 class Event(db.Model):
